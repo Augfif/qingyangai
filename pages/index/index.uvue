@@ -1,0 +1,251 @@
+<template>
+	<view class="page">
+		<!-- ===== AI Input Bar (Top) ===== -->
+		<view class="ai-bar">
+			<text class="ai-bar__emoji">🤖</text>
+			<text class="ai-bar__placeholder">今天想吃点什么？跟我说就行...</text>
+			<view class="ai-bar__voice">
+				<text class="ai-bar__voice-emoji">🎤</text>
+			</view>
+		</view>
+
+		<!-- ===== Section Header ===== -->
+		<view class="section-header">
+			<text class="section-header__title">📋 今日膳食任务</text>
+			<text class="section-header__date">{{ todayDate }}</text>
+		</view>
+
+		<!-- ===== Meal Task Cards (Scrollable) ===== -->
+		<scroll-view class="task-scroll" scroll-y="true" show-scrollbar="false">
+			<MealTaskCard
+				v-for="meal in mealTasks"
+				:key="meal.id"
+				:task="meal"
+			/>
+
+			<!-- Extra: Daily summary card when all done -->
+			<view v-if="allCompleted" class="summary-card">
+				<text class="summary-card__emoji">🎉</text>
+				<text class="summary-card__title">太棒了！今日全部完成</text>
+				<text class="summary-card__sub">
+					总摄入 {{ totalCalories }} kcal · 营养均衡达标
+				</text>
+			</view>
+
+			<!-- Bottom spacer for FAB + TabBar clearance -->
+			<view class="task-scroll__spacer" />
+		</scroll-view>
+
+		<!-- ===== Floating Camera FAB Button ===== -->
+		<view class="fab-wrapper">
+			<view class="fab-ring" />
+			<view class="fab-button">
+				<text class="fab-button__emoji">📸</text>
+			</view>
+			<text class="fab-label">一键拍照打卡</text>
+		</view>
+	</view>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import MealTaskCard from '@/components/MealTaskCard.uvue'
+
+// ========== MOCK DATA ==========
+
+type MealTask = {
+	id: string
+	period: 'breakfast' | 'lunch' | 'dinner'
+	periodEmoji: string
+	timeLabel: string
+	title: string
+	dishes: string
+	calories: number
+	status: 'completed' | 'pending'
+	aiTip: string
+}
+
+const todayDate = '2026年5月12日 周二'
+
+const mealTasks: MealTask[] = [
+	{
+		id: '1',
+		period: 'breakfast',
+		periodEmoji: '🌅',
+		timeLabel: '07:00-09:00',
+		title: '元气早餐',
+		dishes: '牛油果鸡蛋吐司 · 燕麦拿铁 · 蓝莓一小碗',
+		calories: 420,
+		status: 'completed',
+		aiTip: '优质脂肪+蛋白，助力上午专注力',
+	},
+	{
+		id: '2',
+		period: 'lunch',
+		periodEmoji: '☀️',
+		timeLabel: '11:30-13:00',
+		title: '均衡午餐',
+		dishes: '香煎三文鱼 · 藜麦沙拉 · 蒸西兰花 · 杂粮饭',
+		calories: 580,
+		status: 'pending',
+		aiTip: 'Omega-3 对大脑友好，记得细嚼慢咽',
+	},
+	{
+		id: '3',
+		period: 'dinner',
+		periodEmoji: '🌙',
+		timeLabel: '17:30-19:00',
+		title: '轻食晚餐',
+		dishes: '菌菇豆腐汤 · 清炒时蔬 · 红薯半个',
+		calories: 350,
+		status: 'pending',
+		aiTip: '低负担晚餐，有助于睡眠质量',
+	},
+]
+
+// ========== COMPUTED ==========
+
+const allCompleted = computed(() =>
+	mealTasks.every((m) => m.status === 'completed'),
+)
+
+const totalCalories = computed(() =>
+	mealTasks.reduce((sum, m) => sum + m.calories, 0),
+)
+</script>
+
+<style scoped>
+/* ===== Page Base ===== */
+.page {
+	flex: 1;
+	flex-direction: column;
+	background-color: #f8fafc;
+	padding: 16px 18px 0 18px;
+	position: relative;
+}
+
+/* ===== AI Input Bar ===== */
+.ai-bar {
+	flex-direction: row;
+	align-items: center;
+	background-color: rgba(255, 255, 255, 0.85);
+	border-radius: 24px;
+	padding: 14px 18px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+	border: 1px solid rgba(16, 185, 129, 0.10);
+	margin-bottom: 20px;
+}
+.ai-bar__emoji {
+	font-size: 24px;
+	margin-right: 12px;
+}
+.ai-bar__placeholder {
+	flex: 1;
+	font-size: 14px;
+	color: #94a3b8;
+	line-height: 1.4;
+}
+.ai-bar__voice {
+	width: 38px;
+	height: 38px;
+	border-radius: 19px;
+	background-color: rgba(16, 185, 129, 0.12);
+	align-items: center;
+	justify-content: center;
+	margin-left: 10px;
+}
+.ai-bar__voice-emoji {
+	font-size: 18px;
+}
+
+/* ===== Section Header ===== */
+.section-header {
+	flex-direction: row;
+	align-items: flex-end;
+	justify-content: space-between;
+	margin-bottom: 12px;
+	padding: 0 4px;
+}
+.section-header__title {
+	font-size: 17px;
+	font-weight: 700;
+	color: #1e293b;
+}
+.section-header__date {
+	font-size: 12px;
+	color: #94a3b8;
+	font-weight: 500;
+}
+
+/* ===== Task Scroll Area ===== */
+.task-scroll {
+	flex: 1;
+	flex-direction: column;
+}
+.task-scroll__spacer {
+	height: 130px;
+}
+
+/* ===== Summary Card (all completed) ===== */
+.summary-card {
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	background-color: rgba(16, 185, 129, 0.08);
+	border-radius: 20px;
+	padding: 28px 20px;
+	margin-bottom: 14px;
+	border: 1px dashed rgba(16, 185, 129, 0.25);
+}
+.summary-card__emoji {
+	font-size: 40px;
+	margin-bottom: 10px;
+}
+.summary-card__title {
+	font-size: 17px;
+	font-weight: 700;
+	color: #1e293b;
+	margin-bottom: 6px;
+}
+.summary-card__sub {
+	font-size: 13px;
+	color: #64748b;
+}
+
+/* ===== Floating Camera FAB ===== */
+.fab-wrapper {
+	position: absolute;
+	bottom: 20px;
+	left: 0;
+	right: 0;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+}
+.fab-ring {
+	position: absolute;
+	width: 84px;
+	height: 84px;
+	border-radius: 42px;
+	border: 2px solid rgba(16, 185, 129, 0.25);
+	background-color: transparent;
+}
+.fab-button {
+	width: 76px;
+	height: 76px;
+	border-radius: 38px;
+	background-color: #10b981;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 8px 28px rgba(16, 185, 129, 0.40);
+}
+.fab-button__emoji {
+	font-size: 32px;
+}
+.fab-label {
+	font-size: 12px;
+	color: #64748b;
+	font-weight: 600;
+	margin-top: 8px;
+}
+</style>

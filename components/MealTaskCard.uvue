@@ -1,0 +1,138 @@
+<template>
+	<view class="card" :class="{ 'card--done': task.status === 'completed' }">
+		<!-- Left: Period Indicator -->
+		<view class="card__period">
+			<text class="card__period-emoji">{{ task.periodEmoji }}</text>
+			<text class="card__period-time">{{ task.timeLabel }}</text>
+		</view>
+
+		<!-- Center: Meal Info -->
+		<view class="card__body">
+			<text class="card__title">{{ task.title }}</text>
+			<text class="card__dishes">{{ task.dishes }}</text>
+			<view class="card__meta">
+				<text class="card__calories">🔥 {{ task.calories }} kcal</text>
+				<text class="card__ai-tip">💡 {{ task.aiTip }}</text>
+			</view>
+		</view>
+
+		<!-- Right: Status Badge -->
+		<view class="card__status">
+			<text class="card__status-emoji">
+				{{ task.status === 'completed' ? '✅' : '⏳' }}
+			</text>
+			<text class="card__status-label">
+				{{ task.status === 'completed' ? '完成' : '待打卡' }}
+			</text>
+		</view>
+	</view>
+</template>
+
+<script setup lang="ts">
+type MealTask = {
+	id: string
+	period: 'breakfast' | 'lunch' | 'dinner'
+	periodEmoji: string
+	timeLabel: string
+	title: string
+	dishes: string
+	calories: number
+	status: 'completed' | 'pending'
+	aiTip: string
+}
+
+defineProps<{
+	task: MealTask
+}>()
+</script>
+
+<style scoped>
+.card {
+	flex-direction: row;
+	align-items: center;
+	background-color: rgba(255, 255, 255, 0.85);
+	border-radius: 20px;
+	padding: 20px 18px;
+	margin-bottom: 14px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+	border: 1px solid rgba(16, 185, 129, 0.08);
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card--done {
+	background-color: rgba(16, 185, 129, 0.06);
+	border-color: rgba(16, 185, 129, 0.15);
+}
+
+/* Period indicator (left column) */
+.card__period {
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	width: 64px;
+	flex-shrink: 0;
+}
+.card__period-emoji {
+	font-size: 28px;
+	margin-bottom: 4px;
+}
+.card__period-time {
+	font-size: 12px;
+	color: #94a3b8;
+	font-weight: 500;
+}
+
+/* Body (center column) */
+.card__body {
+	flex: 1;
+	flex-direction: column;
+	margin-left: 14px;
+	margin-right: 12px;
+}
+.card__title {
+	font-size: 16px;
+	font-weight: 600;
+	color: #1e293b;
+	margin-bottom: 4px;
+}
+.card__dishes {
+	font-size: 13px;
+	color: #64748b;
+	line-height: 1.5;
+	margin-bottom: 8px;
+}
+.card__meta {
+	flex-direction: row;
+	align-items: center;
+}
+.card__calories {
+	font-size: 12px;
+	color: #f59e0b;
+	font-weight: 600;
+	margin-right: 12px;
+}
+.card__ai-tip {
+	font-size: 11px;
+	color: #94a3b8;
+	flex: 1;
+	lines: 1;
+}
+
+/* Status badge (right column) */
+.card__status {
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 48px;
+}
+.card__status-emoji {
+	font-size: 22px;
+	margin-bottom: 2px;
+}
+.card__status-label {
+	font-size: 11px;
+	color: #94a3b8;
+	font-weight: 500;
+}
+</style>

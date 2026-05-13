@@ -1,0 +1,180 @@
+<template>
+	<view class="page">
+		<view class="status-spacer" />
+
+		<view class="item" :class="{ 'item--show': visible[0] }">
+			<text class="brand-name">轻养AI</text>
+		</view>
+
+		<view class="item" :class="{ 'item--show': visible[1] }">
+			<image class="hero-image" src="/static/salad-bowl.svg" mode="aspectFit" />
+		</view>
+
+		<view class="item" :class="{ 'item--show': visible[2] }">
+			<text class="main-title">AI 一键规划三餐</text>
+			<text class="subtitle">智能定制，轻卡美味</text>
+			<view class="feature-row">
+				<view class="feature-pill"><text class="feature-pill__text">AI对话</text></view>
+				<view class="feature-pill"><text class="feature-pill__text">膳食规划</text></view>
+				<view class="feature-pill"><text class="feature-pill__text">健康追踪</text></view>
+				<view class="feature-pill"><text class="feature-pill__text">拍照识食</text></view>
+			</view>
+		</view>
+
+		<view class="item button-area" :class="{ 'item--show': visible[3] }">
+			<view class="btn btn--primary" @tap="handleEnter">
+				<text class="btn__text btn__text--primary">立即开始</text>
+			</view>
+			<view class="btn btn--secondary" @tap="handleEnter">
+				<text class="btn__text btn__text--secondary">登录 / 注册</text>
+			</view>
+			<view class="home-indicator" />
+		</view>
+	</view>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+
+// Each group controlled independently — browser only handles ONE transition at a time
+const visible = ref<boolean[]>([false, false, false, false])
+
+const DURATION = 550  // ms per animation
+const GAP = 120       // ms pause between groups
+
+onMounted(() => {
+	const start = 80
+	const step = DURATION + GAP
+
+	setTimeout(() => { visible.value[0] = true }, start)
+	setTimeout(() => { visible.value[1] = true }, start + step)
+	setTimeout(() => { visible.value[2] = true }, start + step * 2)
+	setTimeout(() => { visible.value[3] = true }, start + step * 3)
+})
+
+const handleEnter = () => {
+	uni.setStorageSync('hasLaunched', 'true')
+	uni.reLaunch({ url: '/pages/index/index' })
+}
+</script>
+
+<style scoped>
+/* ===== Page ===== */
+.page {
+	flex: 1;
+	flex-direction: column;
+	align-items: center;
+	background: linear-gradient(180deg, #f7fdfa 0%, #edf8f3 100%);
+	padding: 0 32px;
+}
+.status-spacer {
+	height: 60px;
+}
+
+/* ===== Animation Item ===== */
+.item {
+	flex-direction: column;
+	align-items: center;
+	opacity: 0;
+	transform: translate3d(0, 50px, 0);
+	will-change: transform, opacity;
+	transition: opacity 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+	            transform 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.item--show {
+	opacity: 1;
+	transform: translate3d(0, 0, 0);
+}
+
+/* ===== Brand Name ===== */
+.brand-name {
+	font-size: 40px;
+	font-weight: bold;
+	color: #10b981;
+	letter-spacing: 1px;
+	margin-bottom: 40px;
+}
+
+/* ===== Hero Image ===== */
+.hero-image {
+	width: 130px;
+	height: 130px;
+	margin-bottom: 30px;
+}
+
+/* ===== Title & Subtitle ===== */
+.main-title {
+	font-size: 32px;
+	font-weight: 600;
+	color: #1e293b;
+	letter-spacing: 1px;
+	text-align: center;
+	margin-bottom: 12px;
+}
+.subtitle {
+	font-size: 16px;
+	color: #64748b;
+	letter-spacing: 1px;
+	text-align: center;
+}
+
+/* ===== Feature Pills ===== */
+.feature-row {
+	flex-direction: row;
+	justify-content: center;
+	flex-wrap: wrap;
+	margin-top: 50px;
+	margin-bottom: 40px;
+}
+.feature-pill {
+	padding: 8px 16px;
+	border-radius: 12px;
+	background-color: rgba(16, 185, 129, 0.08);
+	margin: 5px;
+}
+.feature-pill__text {
+	font-size: 13px;
+	font-weight: 500;
+	color: #10b981;
+}
+
+/* ===== Button Area ===== */
+.button-area {
+	width: 100%;
+	margin-top: auto;
+	margin-bottom: 40px;
+}
+.btn {
+	width: 100%;
+	height: 54px;
+	border-radius: 27px;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 16px;
+}
+.btn--primary {
+	background-color: #10b981;
+	box-shadow: 0 4px 12px rgba(16, 185, 129, 0.20);
+}
+.btn--secondary {
+	background-color: transparent;
+	border: 1px solid #10b981;
+}
+.btn__text {
+	font-size: 18px;
+	font-weight: 500;
+}
+.btn__text--primary {
+	color: #ffffff;
+}
+.btn__text--secondary {
+	color: #10b981;
+}
+.home-indicator {
+	width: 134px;
+	height: 5px;
+	background-color: #d1d1d1;
+	border-radius: 3px;
+	align-self: center;
+}
+</style>

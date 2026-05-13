@@ -1,0 +1,70 @@
+{
+	"pages": [
+		{
+			"path": "pages/welcome/welcome",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#f7fdfa"
+			}
+		},
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "膳食康养",
+				"navigationBarBackgroundColor": "#f8fafc"
+			}
+		},
+		{
+			"path": "pages/community/community",
+			"style": {
+				"navigationBarTitleText": "激励社区",
+				"navigationBarBackgroundColor": "#f8fafc"
+			}
+		},
+		{
+			"path": "pages/around/around",
+			"style": {
+				"navigationBarTitleText": "周边服务",
+				"navigationBarBackgroundColor": "#f8fafc"
+			}
+		},
+		{
+			"path": "pages/profile/profile",
+			"style": {
+				"navigationBarTitleText": "我的",
+				"navigationBarBackgroundColor": "#f8fafc"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "膳食康养",
+		"navigationBarBackgroundColor": "#f8fafc",
+		"backgroundColor": "#f8fafc"
+	},
+	"tabBar": {
+		"color": "#94a3b8",
+		"selectedColor": "#10b981",
+		"backgroundColor": "rgba(255,255,255,0.92)",
+		"borderStyle": "white",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "🏠 首页"
+			},
+			{
+				"pagePath": "pages/community/community",
+				"text": "🌟 激励"
+			},
+			{
+				"pagePath": "pages/around/around",
+				"text": "🛒 周边"
+			},
+			{
+				"pagePath": "pages/profile/profile",
+				"text": "👤 我的"
+			}
+		]
+	},
+	"uniIdRouter": {}
+}

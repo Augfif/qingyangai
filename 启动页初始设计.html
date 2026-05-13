@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- 确保移动端完美适配 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>轻养ai</title>
+    <!-- 引入 Phosphor Icons 以实现底部线性小图标及顶部状态栏图标 -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        /* 定义全局变量，方便统一修改颜色 */
+        :root {
+            --primary-color: #6eb996; /* 主题薄荷绿 */
+            --bg-color: #f3fdf8;      /* 极浅的绿色背景 */
+            --text-dark: #000000;     /* 主标题纯黑 */
+            --text-gray: #4a4a4a;     /* 副标题灰黑色 */
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            /* 使用苹果及主流系统默认字体，保证排版优雅 */
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+            background-color: #e5e5e5; /* 外围深色背景，突出中间的手机外框 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 模拟手机屏幕容器 */
+        .mobile-app-container {
+            width: 100%;
+            max-width: 390px; /* 模拟主流手机宽度 */
+            height: 100vh;
+            max-height: 844px;
+            background: linear-gradient(180deg, #f7fdfa 0%, #edf8f3 100%);
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* 顶部状态栏模拟 (时间、信号、Wifi、电池) */
+        .status-bar {
+            width: 100%;
+            height: 47px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            box-sizing: border-box;
+            font-size: 15px;
+            font-weight: 600;
+            color: #000;
+        }
+
+        .status-icons {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        /* 顶部品牌 LOGO */
+        .brand-name {
+            font-size: 40px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-top: 50px;
+            letter-spacing: 1px;
+        }
+
+        /* 中部矢量插图 (沙拉碗) */
+        .hero-graphic {
+            margin-top: 40px;
+            width: 130px;
+            height: 130px;
+            color: var(--primary-color);
+        }
+
+        /* 标题区域 */
+        .title-section {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .main-title {
+            font-size: 32px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 0;
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: var(--text-gray);
+            margin-top: 12px;
+            letter-spacing: 1px;
+        }
+
+        /* 线性小图标组 */
+        .icon-group {
+            display: flex;
+            justify-content: center;
+            gap: 28px;
+            margin-top: 50px;
+            margin-bottom: 40px;
+        }
+
+        .icon-group i {
+            font-size: 32px; /* 控制图标大小 */
+            color: var(--primary-color);
+            font-weight: 300;
+        }
+
+        /* 底部按钮区域 */
+        .button-group {
+            width: 100%;
+            padding: 0 32px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: auto;   /* 自动推到底部上方 */
+            margin-bottom: 50px; /* 留出底部横线空间 */
+        }
+
+        .btn {
+            width: 100%;
+            height: 54px;
+            border-radius: 27px; /* 胶囊形状 */
+            font-size: 18px;
+            font-weight: 500;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+            opacity: 0.8;
+        }
+
+        /* 立即开始按钮 */
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 4px 12px rgba(110, 185, 150, 0.2);
+        }
+
+        /* 登录注册按钮 */
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+
+        /* 底部 iOS 操作指示条 */
+        .home-indicator {
+            width: 134px;
+            height: 5px;
+            background-color: #d1d1d1;
+            border-radius: 3px;
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mobile-app-container">
+        <!-- 1. 状态栏 -->
+        <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+                <i class="ph-fill ph-cell-signal-full"></i>
+                <i class="ph-fill ph-wifi-high"></i>
+                <i class="ph-fill ph-battery-full"></i>
+            </div>
+        </div>
+
+        <!-- 2. 品牌名称 -->
+        <div class="brand-name">轻养ai</div>
+
+        <!-- 3. 中间插图 (使用纯代码内联 SVG 绘制轻卡沙拉碗) -->
+        <svg class="hero-graphic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+            <!-- 碗主体 -->
+            <path d="M 15 60 C 15 78, 32 88, 50 88 C 68 88, 85 78, 85 60 Z" />
+            <line x1="10" y1="60" x2="90" y2="60" />
+            <!-- 碗底托 -->
+            <line x1="35" y1="96" x2="65" y2="96" />
+            <line x1="38" y1="88" x2="35" y2="96" />
+            <line x1="62" y1="88" x2="65" y2="96" />
+            <!-- 食物/蔬菜 -->
+            <path d="M 38 60 Q 30 35, 48 30 Q 60 40, 38 60" />
+            <path d="M 62 60 Q 75 40, 58 25 Q 48 38, 62 60" />
+            <!-- 点缀元素 -->
+            <circle cx="32" cy="22" r="2.5" />
+            <circle cx="70" cy="32" r="3.5" />
+            <circle cx="48" cy="15" r="2" />
+        </svg>
+
+        <!-- 4. 文字标语 -->
+        <div class="title-section">
+            <h1 class="main-title">AI 一键规划三餐</h1>
+            <div class="subtitle">智能定制，轻卡美味</div>
+        </div>
+
+        <!-- 5. 线性小图标 (对话、餐盘、爱心、相机) -->
+        <div class="icon-group">
+            <i class="ph ph-chat-centered-dots"></i>
+            <i class="ph ph-fork-knife"></i>
+            <i class="ph ph-heart"></i>
+            <i class="ph ph-camera"></i>
+        </div>
+
+        <!-- 6. 底部操作按钮 -->
+        <div class="button-group">
+            <button class="btn btn-primary">立即开始</button>
+            <button class="btn btn-secondary">登录 / 注册</button>
+        </div>
+
+        <!-- 7. 底部横线 -->
+        <div class="home-indicator"></div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,484 @@
+<template>
+	<scroll-view class="page" scroll-y="true" show-scrollbar="false">
+		<!-- ===== Category Tabs ===== -->
+		<view class="category-tabs">
+			<view
+				v-for="cat in categories"
+				:key="cat.key"
+				class="category-tab"
+				:class="{ 'category-tab--active': activeCategory === cat.key }"
+				@tap="activeCategory = cat.key"
+			>
+				<text class="category-tab__emoji">{{ cat.emoji }}</text>
+				<text class="category-tab__label">{{ cat.label }}</text>
+			</view>
+		</view>
+
+		<!-- ===== Store List ===== -->
+		<view
+			v-for="store in filteredStores"
+			:key="store.id"
+			class="store-card"
+		>
+			<!-- Store Header -->
+			<view class="store-card__header">
+				<view class="store-card__icon-box">
+					<text class="store-card__icon">{{ store.emoji }}</text>
+				</view>
+				<view class="store-card__info">
+					<text class="store-card__name">{{ store.name }}</text>
+					<view class="store-card__meta">
+						<text class="store-card__rating">⭐ {{ store.rating }}</text>
+						<text class="store-card__distance">📍 {{ store.distance }}</text>
+					</view>
+				</view>
+				<view v-if="store.aiRecommend" class="store-card__ai-badge">
+					<text class="store-card__ai-badge-text">🤖 AI 推荐</text>
+				</view>
+			</view>
+
+			<!-- Tags -->
+			<view class="store-card__tags">
+				<view
+					v-for="tag in store.tags"
+					:key="tag"
+					class="store-card__tag"
+				>
+					<text class="store-card__tag-text">{{ tag }}</text>
+				</view>
+			</view>
+
+			<!-- AI Recommendation Text -->
+			<text v-if="store.aiRecommend" class="store-card__ai-tip">
+				💡 {{ store.aiRecommend }}
+			</text>
+
+			<!-- Address -->
+			<text class="store-card__address">📍 {{ store.address }}</text>
+
+			<!-- Action Buttons -->
+			<view class="store-card__actions">
+				<view
+					v-if="store.hasDelivery"
+					class="store-card__btn store-card__btn--order"
+				>
+					<text class="store-card__btn-emoji">🛒</text>
+					<text class="store-card__btn-text">一键下单</text>
+				</view>
+				<view
+					v-if="store.hasBarcode"
+					class="store-card__btn store-card__btn--barcode"
+				>
+					<text class="store-card__btn-emoji">📱</text>
+					<text class="store-card__btn-text">到店核销</text>
+				</view>
+			</view>
+
+			<!-- Barcode Placeholder (shown when hasBarcode) -->
+			<view v-if="store.hasBarcode" class="store-card__barcode">
+				<view class="store-card__barcode-lines">
+					<view
+						v-for="n in 24"
+						:key="n"
+						class="store-card__barcode-line"
+						:style="{
+							height: (20 + Math.sin(n * 1.7) * 10 + Math.random() * 16) + 'px'
+						}"
+					/>
+				</view>
+				<text class="store-card__barcode-code">{{ store.barcodeCode }}</text>
+			</view>
+		</view>
+
+		<!-- Empty state -->
+		<view v-if="filteredStores.length === 0" class="empty-state">
+			<text class="empty-state__emoji">🔍</text>
+			<text class="empty-state__text">该分类暂无合作商家</text>
+		</view>
+
+		<view class="bottom-spacer" />
+	</scroll-view>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+
+// ========== TYPE DEFINITIONS ==========
+
+type StoreItem = {
+	id: string
+	type: 'restaurant' | 'supermarket' | 'hospital'
+	emoji: string
+	name: string
+	rating: number
+	distance: string
+	tags: string[]
+	aiRecommend: string
+	hasDelivery: boolean
+	hasBarcode: boolean
+	address: string
+	barcodeCode: string
+}
+
+type Category = {
+	key: string
+	emoji: string
+	label: string
+}
+
+// ========== MOCK DATA ==========
+
+const categories: Category[] = [
+	{ key: 'restaurant', emoji: '🥗', label: '健康餐厅' },
+	{ key: 'supermarket', emoji: '🛒', label: '有机商超' },
+	{ key: 'hospital', emoji: '🏥', label: '康养机构' },
+]
+
+const activeCategory = ref<string>('restaurant')
+
+const stores: StoreItem[] = [
+	{
+		id: '1',
+		type: 'restaurant',
+		emoji: '🥑',
+		name: '轻食主义 · GreenBowl',
+		rating: 4.8,
+		distance: '1.2km',
+		tags: ['低碳水', '高蛋白', '有机食材'],
+		aiRecommend: '午餐三文鱼藜麦碗与你今日膳食方案高度匹配',
+		hasDelivery: true,
+		hasBarcode: true,
+		address: '朝阳区建外大街国贸商城B1',
+		barcodeCode: '6901 2345 6789',
+	},
+	{
+		id: '2',
+		type: 'restaurant',
+		emoji: '🍜',
+		name: '暖食集 · 中式轻烹',
+		rating: 4.6,
+		distance: '2.0km',
+		tags: ['低油盐', '药膳汤品', '应季食材'],
+		aiRecommend: '今日菌菇豆腐汤特价，低负担晚餐首选',
+		hasDelivery: true,
+		hasBarcode: false,
+		address: '海淀区中关村大街领展购物中心',
+		barcodeCode: '',
+	},
+	{
+		id: '3',
+		type: 'restaurant',
+		emoji: '🥙',
+		name: '波奇食堂 · PokeLab',
+		rating: 4.7,
+		distance: '0.8km',
+		tags: ['夏威夷碗', 'Omega-3', '无麸质'],
+		aiRecommend: '金枪鱼波奇碗富含Omega-3，对ADHD友好',
+		hasDelivery: true,
+		hasBarcode: true,
+		address: '东城区东直门来福士B1',
+		barcodeCode: '6912 3456 7890',
+	},
+	{
+		id: '4',
+		type: 'supermarket',
+		emoji: '🥦',
+		name: '盒马鲜生 · 有机专区',
+		rating: 4.5,
+		distance: '1.5km',
+		tags: ['有机蔬菜', '溯源肉品', '0添加'],
+		aiRecommend: '已上架你膳食方案中的牛油果与蓝莓',
+		hasDelivery: true,
+		hasBarcode: false,
+		address: '朝阳区三里屯太古里南区',
+		barcodeCode: '',
+	},
+	{
+		id: '5',
+		type: 'supermarket',
+		emoji: '🛍️',
+		name: '山姆会员商店',
+		rating: 4.6,
+		distance: '5.2km',
+		tags: ['大包装', '进口食材', '高性价比'],
+		aiRecommend: '三文鱼排本周促销，适合囤货备餐',
+		hasDelivery: true,
+		hasBarcode: true,
+		address: '大兴区西红门荟聚中心',
+		barcodeCode: '6923 4567 8901',
+	},
+	{
+		id: '6',
+		type: 'hospital',
+		emoji: '🏥',
+		name: '协和医院 · 营养科',
+		rating: 4.9,
+		distance: '3.0km',
+		tags: ['三甲医院', '医保定点', '临床营养'],
+		aiRecommend: '可预约营养科门诊，定制专属慢病膳食方案',
+		hasDelivery: false,
+		hasBarcode: true,
+		address: '东城区帅府园1号',
+		barcodeCode: '6934 5678 9012',
+	},
+	{
+		id: '7',
+		type: 'hospital',
+		emoji: '🧘',
+		name: '固生堂 · 中医康养馆',
+		rating: 4.7,
+		distance: '2.5km',
+		tags: ['中医调理', '药食同源', '体质辨识'],
+		aiRecommend: '体质辨识报告可同步至AI膳食方案，精准调理',
+		hasDelivery: false,
+		hasBarcode: true,
+		address: '西城区金融街购物中心对面',
+		barcodeCode: '6945 6789 0123',
+	},
+]
+
+// ========== COMPUTED ==========
+
+const filteredStores = computed(() =>
+	stores.filter((s) => s.type === activeCategory.value),
+)
+</script>
+
+<style scoped>
+/* ===== Page ===== */
+.page {
+	flex: 1;
+	flex-direction: column;
+	background-color: #f8fafc;
+	padding: 16px 18px 0 18px;
+}
+
+/* ===== Category Tabs ===== */
+.category-tabs {
+	flex-direction: row;
+	margin-bottom: 18px;
+}
+.category-tab {
+	flex: 1;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 14px 0;
+	border-radius: 18px;
+	background-color: rgba(255, 255, 255, 0.85);
+	margin-right: 10px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+	border: 1.5px solid transparent;
+	transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.category-tab:last-child {
+	margin-right: 0;
+}
+.category-tab--active {
+	border-color: #10b981;
+	background-color: rgba(16, 185, 129, 0.06);
+}
+.category-tab__emoji {
+	font-size: 26px;
+	margin-bottom: 4px;
+}
+.category-tab__label {
+	font-size: 12px;
+	font-weight: 600;
+	color: #64748b;
+}
+.category-tab--active .category-tab__label {
+	color: #10b981;
+}
+
+/* ===== Store Card ===== */
+.store-card {
+	flex-direction: column;
+	background-color: rgba(255, 255, 255, 0.85);
+	border-radius: 20px;
+	padding: 18px;
+	margin-bottom: 14px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+	border: 1px solid rgba(16, 185, 129, 0.08);
+}
+
+/* Store Header */
+.store-card__header {
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 12px;
+}
+.store-card__icon-box {
+	width: 50px;
+	height: 50px;
+	border-radius: 16px;
+	background-color: rgba(16, 185, 129, 0.10);
+	align-items: center;
+	justify-content: center;
+	margin-right: 12px;
+}
+.store-card__icon {
+	font-size: 26px;
+}
+.store-card__info {
+	flex: 1;
+	flex-direction: column;
+}
+.store-card__name {
+	font-size: 16px;
+	font-weight: 700;
+	color: #1e293b;
+	margin-bottom: 4px;
+}
+.store-card__meta {
+	flex-direction: row;
+	align-items: center;
+}
+.store-card__rating {
+	font-size: 12px;
+	color: #f59e0b;
+	font-weight: 600;
+	margin-right: 12px;
+}
+.store-card__distance {
+	font-size: 12px;
+	color: #94a3b8;
+}
+.store-card__ai-badge {
+	background-color: rgba(16, 185, 129, 0.10);
+	border-radius: 10px;
+	padding: 5px 10px;
+}
+.store-card__ai-badge-text {
+	font-size: 11px;
+	color: #10b981;
+	font-weight: 600;
+}
+
+/* Tags */
+.store-card__tags {
+	flex-direction: row;
+	flex-wrap: wrap;
+	margin-bottom: 10px;
+}
+.store-card__tag {
+	background-color: rgba(16, 185, 129, 0.08);
+	border-radius: 8px;
+	padding: 4px 10px;
+	margin-right: 8px;
+	margin-bottom: 4px;
+}
+.store-card__tag-text {
+	font-size: 11px;
+	color: #10b981;
+	font-weight: 500;
+}
+
+/* AI Tip */
+.store-card__ai-tip {
+	font-size: 12px;
+	color: #64748b;
+	line-height: 1.5;
+	margin-bottom: 8px;
+	padding: 8px 10px;
+	background-color: rgba(245, 158, 11, 0.06);
+	border-radius: 10px;
+}
+
+/* Address */
+.store-card__address {
+	font-size: 11px;
+	color: #94a3b8;
+	margin-bottom: 14px;
+}
+
+/* Action Buttons */
+.store-card__actions {
+	flex-direction: row;
+	margin-bottom: 0;
+}
+.store-card__btn {
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	padding: 12px 0;
+	border-radius: 14px;
+	margin-right: 10px;
+	box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+}
+.store-card__btn:last-child {
+	margin-right: 0;
+}
+.store-card__btn--order {
+	background-color: #10b981;
+	box-shadow: 0 3px 12px rgba(16, 185, 129, 0.30);
+}
+.store-card__btn--barcode {
+	background-color: rgba(255, 255, 255, 0.9);
+	border: 1.5px solid #10b981;
+}
+.store-card__btn-emoji {
+	font-size: 16px;
+	margin-right: 6px;
+}
+.store-card__btn-text {
+	font-size: 14px;
+	font-weight: 700;
+}
+.store-card__btn--order .store-card__btn-text {
+	color: #ffffff;
+}
+.store-card__btn--barcode .store-card__btn-text {
+	color: #10b981;
+}
+
+/* Barcode Placeholder */
+.store-card__barcode {
+	flex-direction: column;
+	align-items: center;
+	margin-top: 14px;
+	padding-top: 14px;
+	border-top: 1px dashed rgba(0, 0, 0, 0.08);
+}
+.store-card__barcode-lines {
+	flex-direction: row;
+	align-items: flex-end;
+	justify-content: center;
+	height: 48px;
+	margin-bottom: 8px;
+}
+.store-card__barcode-line {
+	width: 3px;
+	margin: 0 1px;
+	background-color: #1e293b;
+	border-radius: 1px;
+}
+.store-card__barcode-code {
+	font-size: 13px;
+	font-weight: 700;
+	color: #1e293b;
+	letter-spacing: 2px;
+}
+
+/* Empty State */
+.empty-state {
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding-top: 80px;
+}
+.empty-state__emoji {
+	font-size: 48px;
+	margin-bottom: 12px;
+}
+.empty-state__text {
+	font-size: 15px;
+	color: #94a3b8;
+}
+
+/* Bottom Spacer */
+.bottom-spacer {
+	height: 24px;
+}
+</style>

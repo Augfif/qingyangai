@@ -1,0 +1,633 @@
+<template>
+	<scroll-view class="page" scroll-y="true" show-scrollbar="false">
+		<!-- ===== User Header Card ===== -->
+		<view class="user-card">
+			<view class="user-card__top">
+				<view class="user-card__avatar">
+					<text class="user-card__avatar-emoji">{{ user.avatar }}</text>
+				</view>
+				<view class="user-card__info">
+					<text class="user-card__name">{{ user.name }}</text>
+					<view class="user-card__level">
+						<text class="user-card__level-emoji">{{ user.levelEmoji }}</text>
+						<text class="user-card__level-text">{{ user.level }}</text>
+					</view>
+				</view>
+				<view class="user-card__edit">
+					<text class="user-card__edit-text">✏️</text>
+				</view>
+			</view>
+			<!-- Stats row -->
+			<view class="user-card__stats">
+				<view
+					v-for="stat in userStats"
+					:key="stat.label"
+					class="user-card__stat"
+				>
+					<text class="user-card__stat-value">{{ stat.value }}</text>
+					<text class="user-card__stat-label">{{ stat.label }}</text>
+				</view>
+			</view>
+		</view>
+
+		<!-- ===== Health Report Card ===== -->
+		<view class="report-card">
+			<view class="report-card__header">
+				<text class="report-card__title">📋 健康报告摘要</text>
+				<view class="report-card__verify">
+					<text class="report-card__verify-emoji">✅</text>
+					<text class="report-card__verify-text">协和营养科 审核</text>
+				</view>
+			</view>
+			<text class="report-card__date">更新于 {{ report.updateDate }}</text>
+
+			<!-- Metrics Grid -->
+			<view class="report-card__metrics">
+				<view
+					v-for="metric in report.metrics"
+					:key="metric.label"
+					class="report-card__metric"
+				>
+					<text class="report-card__metric-emoji">{{ metric.emoji }}</text>
+					<text class="report-card__metric-value">{{ metric.value }}</text>
+					<text class="report-card__metric-label">{{ metric.label }}</text>
+					<text
+						class="report-card__metric-status"
+						:class="'report-card__metric-status--' + metric.status"
+					>{{ metric.statusText }}</text>
+				</view>
+			</view>
+
+			<!-- Report summary text -->
+			<view class="report-card__summary">
+				<text class="report-card__summary-emoji">💡</text>
+				<text class="report-card__summary-text">{{ report.summary }}</text>
+			</view>
+		</view>
+
+		<!-- ===== Subscription Card ===== -->
+		<view class="sub-card">
+			<!-- Badge -->
+			<view class="sub-card__badge">
+				<text class="sub-card__badge-text">🔥 限时优惠</text>
+			</view>
+
+			<!-- Price -->
+			<view class="sub-card__price-row">
+				<text class="sub-card__currency">¥</text>
+				<text class="sub-card__price">9.9</text>
+				<text class="sub-card__period">/月</text>
+			</view>
+			<text class="sub-card__annual">年付更省 ¥59.9/年（月均仅 ¥5.0）</text>
+
+			<!-- Perks List -->
+			<view class="sub-card__perks">
+				<view
+					v-for="perk in subscription.perks"
+					:key="perk.text"
+					class="sub-card__perk"
+				>
+					<text class="sub-card__perk-check">{{ perk.emoji }}</text>
+					<text class="sub-card__perk-text">{{ perk.text }}</text>
+				</view>
+			</view>
+
+			<!-- CTA -->
+			<view class="sub-card__cta">
+				<text class="sub-card__cta-text">✨ 立即订阅，开启专属康养 ✨</text>
+			</view>
+			<text class="sub-card__guarantee">🛡️ 3天无理由退款 · 随时取消</text>
+		</view>
+
+		<!-- ===== Service List ===== -->
+		<view class="service-section">
+			<text class="service-section__title">⚡ 增值服务</text>
+
+			<view
+				v-for="(item, idx) in services"
+				:key="item.title"
+				class="service-item"
+				:class="{ 'service-item--last': idx === services.length - 1 }"
+			>
+				<text class="service-item__emoji">{{ item.emoji }}</text>
+				<view class="service-item__body">
+					<text class="service-item__title">{{ item.title }}</text>
+					<text class="service-item__subtitle">{{ item.subtitle }}</text>
+				</view>
+				<view v-if="item.badge" class="service-item__badge">
+					<text class="service-item__badge-text">{{ item.badge }}</text>
+				</view>
+				<text class="service-item__arrow">›</text>
+			</view>
+		</view>
+
+		<!-- ===== General Settings List ===== -->
+		<view class="service-section">
+			<text class="service-section__title">🔧 通用设置</text>
+
+			<view
+				v-for="(item, idx) in settings"
+				:key="item.title"
+				class="service-item"
+				:class="{ 'service-item--last': idx === settings.length - 1 }"
+			>
+				<text class="service-item__emoji">{{ item.emoji }}</text>
+				<view class="service-item__body">
+					<text class="service-item__title">{{ item.title }}</text>
+				</view>
+				<text class="service-item__arrow">›</text>
+			</view>
+		</view>
+
+		<!-- Footer -->
+		<view class="footer">
+			<text class="footer__version">膳食康养 v1.0.0</text>
+			<text class="footer__copyright">由 北京大学医学部 · 协和营养科 联合指导</text>
+		</view>
+
+		<view class="bottom-spacer" />
+	</scroll-view>
+</template>
+
+<script setup lang="ts">
+// ========== TYPE DEFINITIONS ==========
+
+type UserStat = {
+	value: string
+	label: string
+}
+
+type HealthMetric = {
+	emoji: string
+	label: string
+	value: string
+	status: 'good' | 'normal' | 'warning'
+	statusText: string
+}
+
+type HealthReport = {
+	updateDate: string
+	metrics: HealthMetric[]
+	summary: string
+}
+
+type SubscriptionPerk = {
+	emoji: string
+	text: string
+}
+
+type Subscription = {
+	perks: SubscriptionPerk[]
+}
+
+type ServiceItem = {
+	emoji: string
+	title: string
+	subtitle: string
+	badge?: string
+}
+
+type SettingItem = {
+	emoji: string
+	title: string
+}
+
+// ========== MOCK DATA ==========
+
+const user = {
+	avatar: '🧑‍💼',
+	name: '张同学',
+	level: '翡翠会员',
+	levelEmoji: '💎',
+}
+
+const userStats: UserStat[] = [
+	{ value: '47', label: '累计打卡' },
+	{ value: '92%', label: '达标率' },
+	{ value: '3', label: '连续周' },
+]
+
+const report: HealthReport = {
+	updateDate: '2026年5月10日',
+	metrics: [
+		{ emoji: '⚖️', label: 'BMI', value: '22.1', status: 'good', statusText: '标准' },
+		{ emoji: '🫁', label: '体脂率', value: '18.5%', status: 'good', statusText: '优秀' },
+		{ emoji: '🍎', label: '营养分', value: '87', status: 'good', statusText: '良好' },
+		{ emoji: '😴', label: '睡眠', value: '7.2h', status: 'normal', statusText: '正常' },
+		{ emoji: '💓', label: '静息心率', value: '68', status: 'good', statusText: '健康' },
+		{ emoji: '🧠', label: '专注指数', value: '中', status: 'warning', statusText: '待优化' },
+	],
+	summary: '您的整体营养状况良好，BMI与体脂率处于健康区间。建议增加Omega-3脂肪酸摄入以辅助提升专注力，已为您调整下周膳食方案。',
+}
+
+const subscription: Subscription = {
+	perks: [
+		{ emoji: '♾️', text: '无限次 AI 膳食方案生成' },
+		{ emoji: '🚫', text: '全平台无广告纯净体验' },
+		{ emoji: '👨‍⚕️', text: '三甲医师团队方案审核' },
+		{ emoji: '📊', text: '月度深度营养分析报告' },
+		{ emoji: '🎯', text: 'ADHD & 慢病专属方案' },
+		{ emoji: '💬', text: '专属营养师在线咨询' },
+	],
+}
+
+const services: ServiceItem[] = [
+	{ emoji: '🍃', title: '慢病专属方案', subtitle: '高血压 · 糖尿病 · 痛风 定制膳食', badge: '热门' },
+	{ emoji: '👨‍⚕️', title: '医师轻咨询', subtitle: '30分钟线上营养咨询 · ¥49/次' },
+	{ emoji: '📄', title: '营养报告下载', subtitle: 'PDF详细报告 · 可分享给医生' },
+	{ emoji: '🔬', title: '食物不耐受检测', subtitle: '预约线下检测 · 精准排除过敏原' },
+]
+
+const settings: SettingItem[] = [
+	{ emoji: '🎯', title: '饮食偏好设置' },
+	{ emoji: '🔗', title: '健康数据同步' },
+	{ emoji: '📖', title: '膳食百科' },
+	{ emoji: '❓', title: '帮助与反馈' },
+	{ emoji: 'ℹ️', title: '关于我们' },
+]
+</script>
+
+<style scoped>
+/* ===== Page ===== */
+.page {
+	flex: 1;
+	flex-direction: column;
+	background-color: #f8fafc;
+	padding: 16px 18px 0 18px;
+}
+
+/* ===== User Header Card ===== */
+.user-card {
+	flex-direction: column;
+	background-color: rgba(255, 255, 255, 0.85);
+	border-radius: 22px;
+	padding: 22px 20px;
+	margin-bottom: 16px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+	border: 1px solid rgba(16, 185, 129, 0.08);
+}
+.user-card__top {
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 18px;
+}
+.user-card__avatar {
+	width: 60px;
+	height: 60px;
+	border-radius: 30px;
+	background-color: rgba(16, 185, 129, 0.12);
+	align-items: center;
+	justify-content: center;
+	margin-right: 14px;
+}
+.user-card__avatar-emoji {
+	font-size: 32px;
+}
+.user-card__info {
+	flex: 1;
+	flex-direction: column;
+}
+.user-card__name {
+	font-size: 20px;
+	font-weight: 700;
+	color: #1e293b;
+	margin-bottom: 4px;
+}
+.user-card__level {
+	flex-direction: row;
+	align-items: center;
+	background-color: rgba(16, 185, 129, 0.10);
+	border-radius: 10px;
+	padding: 4px 10px;
+	align-self: flex-start;
+}
+.user-card__level-emoji {
+	font-size: 12px;
+	margin-right: 4px;
+}
+.user-card__level-text {
+	font-size: 12px;
+	font-weight: 700;
+	color: #10b981;
+}
+.user-card__edit {
+	width: 36px;
+	height: 36px;
+	border-radius: 18px;
+	background-color: rgba(0, 0, 0, 0.04);
+	align-items: center;
+	justify-content: center;
+}
+.user-card__edit-text {
+	font-size: 16px;
+}
+.user-card__stats {
+	flex-direction: row;
+	justify-content: space-around;
+	border-top: 1px solid rgba(0, 0, 0, 0.05);
+	padding-top: 16px;
+}
+.user-card__stat {
+	flex: 1;
+	flex-direction: column;
+	align-items: center;
+}
+.user-card__stat-value {
+	font-size: 22px;
+	font-weight: 700;
+	color: #1e293b;
+	margin-bottom: 2px;
+}
+.user-card__stat-label {
+	font-size: 11px;
+	color: #94a3b8;
+}
+
+/* ===== Health Report Card ===== */
+.report-card {
+	flex-direction: column;
+	background-color: rgba(255, 255, 255, 0.85);
+	border-radius: 20px;
+	padding: 20px 18px;
+	margin-bottom: 16px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+	border: 1px solid rgba(16, 185, 129, 0.08);
+}
+.report-card__header {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 2px;
+}
+.report-card__title {
+	font-size: 16px;
+	font-weight: 700;
+	color: #1e293b;
+}
+.report-card__verify {
+	flex-direction: row;
+	align-items: center;
+	background-color: rgba(16, 185, 129, 0.08);
+	border-radius: 8px;
+	padding: 3px 10px;
+}
+.report-card__verify-emoji {
+	font-size: 11px;
+	margin-right: 3px;
+}
+.report-card__verify-text {
+	font-size: 10px;
+	font-weight: 700;
+	color: #10b981;
+}
+.report-card__date {
+	font-size: 11px;
+	color: #94a3b8;
+	margin-bottom: 14px;
+}
+.report-card__metrics {
+	flex-direction: row;
+	flex-wrap: wrap;
+	margin-bottom: 14px;
+}
+.report-card__metric {
+	flex-direction: column;
+	align-items: center;
+	width: 33.33%;
+	padding: 10px 6px;
+}
+.report-card__metric-emoji {
+	font-size: 20px;
+	margin-bottom: 4px;
+}
+.report-card__metric-value {
+	font-size: 18px;
+	font-weight: 700;
+	color: #1e293b;
+	margin-bottom: 2px;
+}
+.report-card__metric-label {
+	font-size: 11px;
+	color: #94a3b8;
+	margin-bottom: 3px;
+}
+.report-card__metric-status {
+	font-size: 10px;
+	font-weight: 600;
+	padding: 1px 8px;
+	border-radius: 6px;
+}
+.report-card__metric-status--good {
+	color: #10b981;
+	background-color: rgba(16, 185, 129, 0.10);
+}
+.report-card__metric-status--normal {
+	color: #64748b;
+	background-color: rgba(0, 0, 0, 0.05);
+}
+.report-card__metric-status--warning {
+	color: #f59e0b;
+	background-color: rgba(245, 158, 11, 0.10);
+}
+.report-card__summary {
+	flex-direction: row;
+	padding: 12px 14px;
+	background-color: rgba(245, 158, 11, 0.05);
+	border-radius: 12px;
+}
+.report-card__summary-emoji {
+	font-size: 14px;
+	margin-right: 8px;
+	flex-shrink: 0;
+	margin-top: 1px;
+}
+.report-card__summary-text {
+	flex: 1;
+	font-size: 12px;
+	color: #64748b;
+	line-height: 1.6;
+}
+
+/* ===== Subscription Card ===== */
+.sub-card {
+	flex-direction: column;
+	align-items: center;
+	background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.02));
+	border-radius: 22px;
+	padding: 24px 20px 20px 20px;
+	margin-bottom: 20px;
+	border: 2px solid rgba(16, 185, 129, 0.20);
+	box-shadow: 0 6px 24px rgba(16, 185, 129, 0.08);
+	position: relative;
+}
+.sub-card__badge {
+	position: absolute;
+	top: -12px;
+	background-color: #f59e0b;
+	border-radius: 12px;
+	padding: 5px 16px;
+	box-shadow: 0 2px 8px rgba(245, 158, 11, 0.30);
+}
+.sub-card__badge-text {
+	font-size: 12px;
+	font-weight: 700;
+	color: #ffffff;
+}
+.sub-card__price-row {
+	flex-direction: row;
+	align-items: flex-end;
+	margin-top: 8px;
+	margin-bottom: 4px;
+}
+.sub-card__currency {
+	font-size: 22px;
+	font-weight: 700;
+	color: #10b981;
+	margin-right: 2px;
+}
+.sub-card__price {
+	font-size: 48px;
+	font-weight: 700;
+	color: #10b981;
+	line-height: 1;
+}
+.sub-card__period {
+	font-size: 18px;
+	font-weight: 700;
+	color: #10b981;
+	margin-left: 2px;
+}
+.sub-card__annual {
+	font-size: 12px;
+	color: #64748b;
+	margin-bottom: 18px;
+}
+.sub-card__perks {
+	flex-direction: column;
+	align-self: stretch;
+	margin-bottom: 18px;
+}
+.sub-card__perk {
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 10px;
+}
+.sub-card__perk:last-child {
+	margin-bottom: 0;
+}
+.sub-card__perk-check {
+	font-size: 16px;
+	margin-right: 10px;
+}
+.sub-card__perk-text {
+	font-size: 14px;
+	color: #1e293b;
+	font-weight: 500;
+}
+.sub-card__cta {
+	align-self: stretch;
+	background-color: #10b981;
+	border-radius: 16px;
+	padding: 14px 0;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+	margin-bottom: 10px;
+}
+.sub-card__cta-text {
+	font-size: 16px;
+	font-weight: 700;
+	color: #ffffff;
+}
+.sub-card__guarantee {
+	font-size: 11px;
+	color: #94a3b8;
+}
+
+/* ===== Service List ===== */
+.service-section {
+	flex-direction: column;
+	margin-bottom: 20px;
+}
+.service-section__title {
+	font-size: 15px;
+	font-weight: 700;
+	color: #1e293b;
+	margin-bottom: 10px;
+	padding: 0 4px;
+}
+.service-item {
+	flex-direction: row;
+	align-items: center;
+	background-color: rgba(255, 255, 255, 0.85);
+	padding: 16px 18px;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+.service-item:first-child {
+	border-radius: 18px 18px 0 0;
+}
+.service-item--last {
+	border-radius: 0 0 18px 18px;
+	border-bottom: none;
+}
+.service-item:first-child.service-item--last {
+	border-radius: 18px;
+}
+.service-item__emoji {
+	font-size: 22px;
+	margin-right: 14px;
+	width: 28px;
+	text-align: center;
+}
+.service-item__body {
+	flex: 1;
+	flex-direction: column;
+}
+.service-item__title {
+	font-size: 15px;
+	font-weight: 600;
+	color: #1e293b;
+	margin-bottom: 2px;
+}
+.service-item__subtitle {
+	font-size: 12px;
+	color: #94a3b8;
+}
+.service-item__badge {
+	background-color: rgba(245, 158, 11, 0.12);
+	border-radius: 8px;
+	padding: 3px 8px;
+	margin-right: 10px;
+}
+.service-item__badge-text {
+	font-size: 11px;
+	font-weight: 700;
+	color: #d97706;
+}
+.service-item__arrow {
+	font-size: 20px;
+	color: #cbd5e1;
+	font-weight: 400;
+}
+
+/* ===== Footer ===== */
+.footer {
+	flex-direction: column;
+	align-items: center;
+	padding: 24px 0;
+}
+.footer__version {
+	font-size: 12px;
+	color: #94a3b8;
+	margin-bottom: 4px;
+}
+.footer__copyright {
+	font-size: 11px;
+	color: #cbd5e1;
+}
+
+/* ===== Bottom Spacer ===== */
+.bottom-spacer {
+	height: 16px;
+}
+</style>

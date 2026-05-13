@@ -1,0 +1,558 @@
+<template>
+	<scroll-view class="page" scroll-y="true" show-scrollbar="false">
+		<!-- ===== Streak Banner ===== -->
+		<view class="streak-banner">
+			<view class="streak-banner__inner">
+				<text class="streak-banner__emoji">🔥</text>
+				<view class="streak-banner__info">
+					<text class="streak-banner__count">{{ streakDays }} 天</text>
+					<text class="streak-banner__label">连续健康打卡</text>
+				</view>
+				<view class="streak-banner__badge">
+					<text class="streak-banner__badge-text">本周 TOP {{ rankPercent }}%</text>
+				</view>
+			</view>
+		</view>
+
+		<!-- ===== Calendar Heatmap Section ===== -->
+		<view class="section">
+			<view class="section-header">
+				<text class="section-header__title">📅 打卡热力图</text>
+				<text class="section-header__sub">近 5 个月</text>
+			</view>
+
+			<view class="heatmap-container">
+				<!-- Day-of-week labels -->
+				<view class="heatmap__row-labels">
+					<text
+						v-for="label in dayLabels"
+						:key="label"
+						class="heatmap__row-label"
+					>{{ label }}</text>
+				</view>
+
+				<!-- Horizontal scrollable grid -->
+				<scroll-view class="heatmap__scroll" scroll-x="true" show-scrollbar="false">
+					<view class="heatmap__grid">
+						<view
+							v-for="(cell, idx) in heatmapData"
+							:key="idx"
+							class="heatmap__cell"
+							:class="'heatmap__cell--l' + cell.level"
+							:title="cell.date + ' · ' + cell.meals + '餐打卡'"
+						/>
+					</view>
+				</scroll-view>
+			</view>
+
+			<!-- Legend -->
+			<view class="heatmap__legend">
+				<text class="heatmap__legend-label">少</text>
+				<view
+					v-for="lv in 4"
+					:key="lv"
+					class="heatmap__legend-swatch"
+					:class="'heatmap__cell--l' + (lv - 1)"
+				/>
+				<text class="heatmap__legend-label">多</text>
+			</view>
+		</view>
+
+		<!-- ===== Progress Bars ===== -->
+		<view class="section">
+			<view class="section-header">
+				<text class="section-header__title">📊 本周营养进度</text>
+			</view>
+
+			<view
+				v-for="item in progressItems"
+				:key="item.label"
+				class="progress-card"
+			>
+				<view class="progress-card__header">
+					<text class="progress-card__emoji">{{ item.emoji }}</text>
+					<text class="progress-card__label">{{ item.label }}</text>
+					<text class="progress-card__value">
+						{{ item.current }}/{{ item.target }}{{ item.unit }}
+					</text>
+				</view>
+				<view class="progress-card__track">
+					<view
+						class="progress-card__fill"
+						:style="{ width: (item.current / item.target * 100) + '%' }"
+					/>
+				</view>
+			</view>
+		</view>
+
+		<!-- ===== Badge Showcase ===== -->
+		<view class="section">
+			<view class="section-header">
+				<text class="section-header__title">🏅 成就徽章</text>
+				<text class="section-header__sub">{{ unlockedBadgeCount }}/{{ badges.length }} 已解锁</text>
+			</view>
+
+			<scroll-view class="badge-scroll" scroll-x="true" show-scrollbar="false">
+				<view
+					v-for="badge in badges"
+					:key="badge.name"
+					class="badge-card"
+					:class="{ 'badge-card--locked': !badge.unlocked }"
+				>
+					<text class="badge-card__emoji">{{ badge.emoji }}</text>
+					<text class="badge-card__name">{{ badge.name }}</text>
+					<text class="badge-card__desc">{{ badge.desc }}</text>
+				</view>
+			</scroll-view>
+		</view>
+
+		<!-- ===== Friend Team Challenge ===== -->
+		<view class="section">
+			<view class="section-header">
+				<text class="section-header__title">🤝 组队挑战</text>
+			</view>
+
+			<view class="challenge-card">
+				<view class="challenge-card__top">
+					<view class="challenge-card__avatars">
+						<text class="challenge-card__avatar">🐼</text>
+						<text class="challenge-card__avatar">🦊</text>
+						<text class="challenge-card__avatar">🐨</text>
+						<text class="challenge-card__plus">+2</text>
+					</view>
+					<view class="challenge-card__prize">
+						<text class="challenge-card__prize-emoji">🎁</text>
+						<text class="challenge-card__prize-text">{{ challenge.prize }}</text>
+					</view>
+				</view>
+				<text class="challenge-card__title">{{ challenge.title }}</text>
+				<text class="challenge-card__desc">{{ challenge.desc }}</text>
+				<view class="challenge-card__bar">
+					<view class="challenge-card__bar-fill" :style="{ width: challenge.progress + '%' }" />
+				</view>
+				<view class="challenge-card__footer">
+					<text class="challenge-card__participants">
+						👥 {{ challenge.participantCount }} 人参与
+					</text>
+					<view class="challenge-card__join-btn">
+						<text class="challenge-card__join-text">加入挑战</text>
+					</view>
+				</view>
+			</view>
+		</view>
+
+		<!-- Bottom spacer -->
+		<view class="bottom-spacer" />
+	</scroll-view>
+</template>
+
+<script setup lang="ts">
+// ========== TYPE DEFINITIONS ==========
+
+type HeatmapCell = {
+	date: string
+	level: 0 | 1 | 2 | 3
+	meals: number
+}
+
+type ProgressItem = {
+	emoji: string
+	label: string
+	current: number
+	target: number
+	unit: string
+}
+
+type Badge = {
+	emoji: string
+	name: string
+	unlocked: boolean
+	desc: string
+}
+
+type Challenge = {
+	title: string
+	desc: string
+	prize: string
+	progress: number
+	participantCount: number
+}
+
+// ========== MOCK DATA ==========
+
+const dayLabels = ['一', '二', '三', '四', '五', '六', '日']
+
+const streakDays = 7
+const rankPercent = 15
+
+const unlockedBadgeCount = 5
+
+// Generate 5 months of heatmap data (21 weeks = 147 days)
+const heatmapData: HeatmapCell[] = (() => {
+	const now = new Date(2026, 4, 11) // May 11, 2026
+	const cells: HeatmapCell[] = []
+
+	for (let d = 146; d >= 0; d--) {
+		const date = new Date(now)
+		date.setDate(date.getDate() - d)
+		const mon = date.getMonth() + 1
+		const day = date.getDate()
+		const mm = mon < 10 ? '0' + mon : '' + mon
+		const dd = day < 10 ? '0' + day : '' + day
+		const dateStr = date.getFullYear() + '-' + mm + '-' + dd
+
+		// Bias: last 3 weeks have higher intensity (streak building up)
+		const recentBias = d < 21 ? 0.6 : 0
+		const rand = Math.random() + recentBias
+		let meals: number
+		let level: 0 | 1 | 2 | 3
+		if (rand > 1.3) { meals = 3; level = 3 }
+		else if (rand > 0.9) { meals = 2; level = 2 }
+		else if (rand > 0.5) { meals = 1; level = 1 }
+		else { meals = 0; level = 0 }
+
+		cells.push({ date: dateStr, level, meals })
+	}
+	return cells
+})()
+
+const progressItems: ProgressItem[] = [
+	{ emoji: '🥩', label: '优质蛋白质', current: 5, target: 7, unit: '天' },
+	{ emoji: '🥬', label: '蔬菜摄入', current: 9, target: 7, unit: '份' },
+	{ emoji: '💧', label: '饮水打卡', current: 18, target: 21, unit: '杯' },
+]
+
+const badges: Badge[] = [
+	{ emoji: '🌱', name: '新手启程', unlocked: true, desc: '完成首次AI膳食方案' },
+	{ emoji: '🔥', name: '连续7天', unlocked: true, desc: '连续打卡满一周' },
+	{ emoji: '🥗', name: '彩虹餐桌', unlocked: true, desc: '单日摄入5色食材' },
+	{ emoji: '📸', name: '拍照达人', unlocked: true, desc: '累计拍照识别50次' },
+	{ emoji: '🧠', name: 'ADHD关怀', unlocked: true, desc: '坚持Omega-3饮食方案' },
+	{ emoji: '⭐', name: '满分食谱', unlocked: false, desc: '连续30天三餐达标' },
+	{ emoji: '💪', name: '体态先锋', unlocked: false, desc: 'BMI改善1个点' },
+	{ emoji: '🏆', name: '社区之星', unlocked: false, desc: '组队挑战获胜3次' },
+]
+
+const challenge: Challenge = {
+	title: '7天轻食打卡PK',
+	desc: '与好友组队，团队累计打卡次数最多的小组赢取健康零食礼包',
+	prize: '健康零食大礼包',
+	progress: 57,
+	participantCount: 248,
+}
+</script>
+
+<style scoped>
+/* ===== Page ===== */
+.page {
+	flex: 1;
+	flex-direction: column;
+	background-color: #f8fafc;
+	padding: 16px 18px 0 18px;
+}
+
+/* ===== Section ===== */
+.section {
+	flex-direction: column;
+	margin-bottom: 24px;
+}
+.section-header {
+	flex-direction: row;
+	align-items: flex-end;
+	justify-content: space-between;
+	margin-bottom: 12px;
+	padding: 0 4px;
+}
+.section-header__title {
+	font-size: 16px;
+	font-weight: 700;
+	color: #1e293b;
+}
+.section-header__sub {
+	font-size: 12px;
+	color: #94a3b8;
+}
+
+/* ===== Streak Banner ===== */
+.streak-banner {
+	margin-bottom: 22px;
+}
+.streak-banner__inner {
+	flex-direction: row;
+	align-items: center;
+	background-color: rgba(255, 255, 255, 0.85);
+	border-radius: 20px;
+	padding: 20px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+	border: 1px solid rgba(16, 185, 129, 0.08);
+}
+.streak-banner__emoji {
+	font-size: 40px;
+	margin-right: 14px;
+}
+.streak-banner__info {
+	flex: 1;
+	flex-direction: column;
+}
+.streak-banner__count {
+	font-size: 28px;
+	font-weight: 700;
+	color: #10b981;
+	line-height: 1.1;
+}
+.streak-banner__label {
+	font-size: 13px;
+	color: #64748b;
+	margin-top: 2px;
+}
+.streak-banner__badge {
+	background-color: rgba(16, 185, 129, 0.12);
+	border-radius: 14px;
+	padding: 6px 14px;
+}
+.streak-banner__badge-text {
+	font-size: 12px;
+	color: #10b981;
+	font-weight: 700;
+}
+
+/* ===== Heatmap ===== */
+.heatmap-container {
+	flex-direction: row;
+	background-color: rgba(255, 255, 255, 0.85);
+	border-radius: 20px;
+	padding: 14px 10px 10px 8px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+	border: 1px solid rgba(16, 185, 129, 0.08);
+}
+.heatmap__row-labels {
+	flex-direction: column;
+	justify-content: space-around;
+	margin-right: 6px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+}
+.heatmap__row-label {
+	font-size: 9px;
+	color: #94a3b8;
+	width: 14px;
+	text-align: center;
+	line-height: 18px;
+}
+.heatmap__scroll {
+	flex: 1;
+}
+.heatmap__grid {
+	flex-direction: column;
+	flex-wrap: wrap;
+	height: 126px; /* 7 rows × 18px */
+	width: 420px; /* 21 cols × (14+6)px */
+}
+.heatmap__cell {
+	width: 14px;
+	height: 14px;
+	border-radius: 3px;
+	margin: 2px;
+	background-color: #e2e8f0;
+}
+.heatmap__cell--l0 { background-color: #e2e8f0; }
+.heatmap__cell--l1 { background-color: rgba(16, 185, 129, 0.25); }
+.heatmap__cell--l2 { background-color: rgba(16, 185, 129, 0.50); }
+.heatmap__cell--l3 { background-color: rgba(16, 185, 129, 0.82); }
+
+/* Heatmap Legend */
+.heatmap__legend {
+	flex-direction: row;
+	align-items: center;
+	justify-content: flex-end;
+	margin-top: 8px;
+	padding-right: 4px;
+}
+.heatmap__legend-label {
+	font-size: 10px;
+	color: #94a3b8;
+	margin: 0 6px;
+}
+.heatmap__legend-swatch {
+	width: 12px;
+	height: 12px;
+	border-radius: 2px;
+	margin: 0 2px;
+}
+
+/* ===== Progress Cards ===== */
+.progress-card {
+	flex-direction: column;
+	background-color: rgba(255, 255, 255, 0.85);
+	border-radius: 16px;
+	padding: 16px 18px;
+	margin-bottom: 10px;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+	border: 1px solid rgba(16, 185, 129, 0.06);
+}
+.progress-card__header {
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 10px;
+}
+.progress-card__emoji {
+	font-size: 18px;
+	margin-right: 8px;
+}
+.progress-card__label {
+	flex: 1;
+	font-size: 14px;
+	font-weight: 600;
+	color: #1e293b;
+}
+.progress-card__value {
+	font-size: 13px;
+	font-weight: 700;
+	color: #10b981;
+}
+.progress-card__track {
+	height: 8px;
+	border-radius: 4px;
+	background-color: #e2e8f0;
+	overflow: hidden;
+}
+.progress-card__fill {
+	height: 8px;
+	border-radius: 4px;
+	background-color: #10b981;
+}
+
+/* ===== Badge Scroll ===== */
+.badge-scroll {
+	flex-direction: row;
+}
+.badge-card {
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	width: 88px;
+	min-width: 88px;
+	background-color: rgba(255, 255, 255, 0.85);
+	border-radius: 18px;
+	padding: 16px 10px;
+	margin-right: 10px;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+	border: 1px solid rgba(16, 185, 129, 0.10);
+}
+.badge-card--locked {
+	opacity: 0.45;
+	border-color: rgba(0, 0, 0, 0.04);
+}
+.badge-card__emoji {
+	font-size: 30px;
+	margin-bottom: 6px;
+}
+.badge-card__name {
+	font-size: 12px;
+	font-weight: 700;
+	color: #1e293b;
+	text-align: center;
+	margin-bottom: 2px;
+}
+.badge-card__desc {
+	font-size: 10px;
+	color: #94a3b8;
+	text-align: center;
+	lines: 2;
+}
+
+/* ===== Challenge Card ===== */
+.challenge-card {
+	flex-direction: column;
+	background-color: rgba(255, 255, 255, 0.85);
+	border-radius: 20px;
+	padding: 20px 18px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+	border: 1px solid rgba(16, 185, 129, 0.12);
+}
+.challenge-card__top {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 14px;
+}
+.challenge-card__avatars {
+	flex-direction: row;
+	align-items: center;
+}
+.challenge-card__avatar {
+	font-size: 24px;
+	margin-right: -4px;
+}
+.challenge-card__plus {
+	font-size: 12px;
+	font-weight: 700;
+	color: #64748b;
+	margin-left: 4px;
+}
+.challenge-card__prize {
+	flex-direction: row;
+	align-items: center;
+	background-color: rgba(245, 158, 11, 0.12);
+	border-radius: 12px;
+	padding: 6px 12px;
+}
+.challenge-card__prize-emoji {
+	font-size: 14px;
+	margin-right: 4px;
+}
+.challenge-card__prize-text {
+	font-size: 12px;
+	font-weight: 700;
+	color: #d97706;
+}
+.challenge-card__title {
+	font-size: 17px;
+	font-weight: 700;
+	color: #1e293b;
+	margin-bottom: 6px;
+}
+.challenge-card__desc {
+	font-size: 13px;
+	color: #64748b;
+	line-height: 1.5;
+	margin-bottom: 14px;
+}
+.challenge-card__bar {
+	height: 6px;
+	border-radius: 3px;
+	background-color: #e2e8f0;
+	margin-bottom: 12px;
+	overflow: hidden;
+}
+.challenge-card__bar-fill {
+	height: 6px;
+	border-radius: 3px;
+	background-color: #10b981;
+}
+.challenge-card__footer {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+}
+.challenge-card__participants {
+	font-size: 12px;
+	color: #94a3b8;
+}
+.challenge-card__join-btn {
+	background-color: #10b981;
+	border-radius: 16px;
+	padding: 8px 20px;
+	box-shadow: 0 3px 10px rgba(16, 185, 129, 0.30);
+}
+.challenge-card__join-text {
+	font-size: 13px;
+	font-weight: 700;
+	color: #ffffff;
+}
+
+/* ===== Bottom Spacer ===== */
+.bottom-spacer {
+	height: 24px;
+}
+</style>
