@@ -1,7 +1,7 @@
 <template>
-	<view class="page" :class="{ 'page--ready': isReady }">
+	<view class="page">
 		<!-- Background Blobs -->
-		<view class="bg-blobs entrance-item entrance-item--1">
+		<view class="bg-blobs entrance-item entrance-item--1" :class="{ 'entrance-item--show': isReady }">
 			<image
 				class="blob blob-1"
 				:class="{ 'blob-1--shift': blobPhase }"
@@ -17,16 +17,16 @@
 		</view>
 
 		<!-- Header -->
-		<view class="header entrance-item entrance-item--1" :style="{ paddingTop: headerPadding + 'px' }">
+		<view class="header entrance-item entrance-item--1" :style="{ paddingTop: headerPadding + 'px' }" :class="{ 'entrance-item--show': isReady }">
 			<view class="menu-btn" @tap="handleMenu">
 				<image class="menu-btn__icon" src="/static/icons/list.png" mode="aspectFit" />
 			</view>
 		</view>
 
-		<!-- Main Content -->
-		<view class="main-content">
+		<!-- Main Content (Scrollable) -->
+		<scroll-view class="main-content" :scroll-y="true">
 			<!-- Dialogue Section -->
-			<view class="dialogue-section entrance-item entrance-item--2">
+			<view class="dialogue-section entrance-item entrance-item--2" :class="{ 'entrance-item--show': isReady }">
 				<!-- AI Greeting -->
 				<view class="ai-greeting">
 					<view class="ai-avatar">
@@ -37,8 +37,7 @@
 
 				<!-- Input Card with Breathing Glow -->
 				<view class="input-card-wrapper">
-					<view class="input-glow-bg" :class="{ 'input-glow-bg--active': isBreathing }" />
-					<view class="input-card">
+					<view class="input-card" :class="{ 'input-card--breathing': isBreathing }">
 						<textarea
 							class="input-card__textarea"
 							placeholder="例如：我想调理肠胃、不想节食，给我安排一天的计划..."
@@ -59,8 +58,11 @@
 				</view>
 			</view>
 
+			<!-- Spacer -->
+			<view style="height: 40px;" />
+
 			<!-- Camera Section -->
-			<view class="camera-section entrance-item entrance-item--3">
+			<view class="camera-section entrance-item entrance-item--3" :class="{ 'entrance-item--show': isReady }">
 				<view class="camera-wrapper">
 					<view class="ripple-circle" :class="{ 'ripple-circle--expand': ripplePhase }" />
 					<view class="camera-btn" @tap="handleCamera">
@@ -68,10 +70,7 @@
 					</view>
 				</view>
 			</view>
-		</view>
-
-		<!-- Home Indicator -->
-		<view class="home-indicator entrance-item entrance-item--4" />
+		</scroll-view>
 	</view>
 </template>
 
@@ -146,7 +145,7 @@ const handleCamera = () => {
 	position: relative;
 }
 
-/* ===== Entrance Animation (single isReady ref + CSS transition-delay) ===== */
+/* ===== Entrance Animation ===== */
 .entrance-item {
 	opacity: 0;
 	transform: translateY(50px);
@@ -158,7 +157,7 @@ const handleCamera = () => {
 .entrance-item--2 { transition-delay: 0.12s; }
 .entrance-item--3 { transition-delay: 0.24s; }
 .entrance-item--4 { transition-delay: 0.36s; }
-.page--ready .entrance-item {
+.entrance-item--show {
 	opacity: 1;
 	transform: translateY(0);
 }
@@ -224,19 +223,20 @@ const handleCamera = () => {
 	height: 24px;
 }
 
-/* ===== Main Content ===== */
+/* ===== Main Content (Scrollable) ===== */
 .main-content {
 	flex: 1;
+	width: 100%;
+	box-sizing: border-box;
 	flex-direction: column;
 	z-index: 10;
-	padding: 0 24px;
+	padding: 0 16px;
 	margin-top: 30px;
 }
 
 /* ===== Dialogue Section ===== */
 .dialogue-section {
 	width: 100%;
-	margin-bottom: auto;
 }
 
 /* ===== AI Greeting ===== */
@@ -265,37 +265,32 @@ const handleCamera = () => {
 	margin-left: 10px;
 }
 
-/* ===== Input Card Wrapper (breathing glow via opacity on sibling layer) ===== */
+/* ===== Input Card (breathing via background-color transition) ===== */
 .input-card-wrapper {
 	position: relative;
-}
-.input-glow-bg {
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	border-radius: 24px;
-	box-shadow: 0 12px 30px rgba(110, 185, 150, 0.3);
-	opacity: 0;
-	transition-property: opacity;
-	transition-duration: 2s;
-	transition-timing-function: ease-in-out;
-}
-.input-glow-bg--active {
-	opacity: 1;
+	width: 100%;
+	box-sizing: border-box;
 }
 .input-card {
 	position: relative;
 	z-index: 1;
-	background-color: rgba(255, 255, 255, 0.75);
+	width: 100%;
+	box-sizing: border-box;
+	background-color: rgba(255, 255, 255, 0.6);
 	border: 2px solid rgba(255, 255, 255, 0.8);
 	border-radius: 24px;
-	padding: 20px;
-	box-shadow: 0 8px 20px rgba(110, 185, 150, 0.15);
+	padding: 16px;
+	transition-property: background-color;
+	transition-duration: 2s;
+	transition-timing-function: ease-in-out;
+	box-shadow: none;
+}
+.input-card--breathing {
+	background-color: rgba(255, 255, 255, 0.9);
 }
 .input-card__textarea {
 	width: 100%;
+	min-height: 90px;
 	background-color: transparent;
 	font-size: 18px;
 	color: #2d3436;
@@ -307,9 +302,9 @@ const handleCamera = () => {
 	flex-direction: row;
 	align-items: center;
 	justify-content: space-between;
-	margin-top: 15px;
+	margin-top: 10px;
 	border-top: 1px solid rgba(0, 0, 0, 0.05);
-	padding-top: 15px;
+	padding-top: 12px;
 }
 .voice-btn {
 	flex-direction: row;
@@ -355,7 +350,6 @@ const handleCamera = () => {
 .camera-section {
 	flex-direction: row;
 	justify-content: center;
-	margin-bottom: 50px;
 }
 .camera-wrapper {
 	width: 80px;
@@ -385,22 +379,12 @@ const handleCamera = () => {
 	border-radius: 40px;
 	background-color: rgba(255, 255, 255, 0.85);
 	border: 4px solid #ffffff;
-	box-shadow: 0 15px 35px rgba(110, 185, 150, 0.25);
+	box-shadow: none;
 	align-items: center;
 	justify-content: center;
 }
 .camera-btn__icon {
 	width: 36px;
 	height: 36px;
-}
-
-/* ===== Home Indicator ===== */
-.home-indicator {
-	width: 134px;
-	height: 5px;
-	background-color: rgba(0, 0, 0, 0.2);
-	border-radius: 3px;
-	align-self: center;
-	margin-bottom: 12px;
 }
 </style>
