@@ -19,7 +19,12 @@
 		<!-- Header -->
 		<view class="header entrance-item entrance-item--1" :style="{ paddingTop: headerPadding + 'px' }">
 			<view class="menu-btn" @tap="handleMenu">
-				<image class="menu-btn__icon" src="/static/icons/list.png" mode="aspectFit" />
+				<xw-lottie-view
+					class="menu-btn__icon"
+					:autoplay="true"
+					url="/static/icon-menu.json"
+					:loopCount="-1"
+				/>
 			</view>
 		</view>
 
@@ -30,7 +35,12 @@
 				<!-- AI Greeting -->
 				<view class="ai-greeting">
 					<view class="ai-avatar">
-						<image class="ai-avatar__icon" src="/static/icons/sparkle.png" mode="aspectFit" />
+						<xw-lottie-view
+							class="ai-avatar__icon"
+							:autoplay="true"
+							url="/static/icon-sparkle.json"
+							:loopCount="-1"
+						/>
 					</view>
 					<text class="ai-greeting__text">Hi，今天想怎么吃？</text>
 				</view>
@@ -47,12 +57,22 @@
 						/>
 						<view class="input-actions">
 							<view class="voice-btn" @tap="handleVoice">
-								<image class="voice-btn__icon" src="/static/icons/microphone.png" mode="aspectFit" />
+								<xw-lottie-view
+									class="voice-btn__icon"
+									:autoplay="true"
+									url="/static/icon-mic.json"
+									:loopCount="-1"
+								/>
 								<text class="voice-btn__text">语音输入</text>
 							</view>
 							<view class="generate-btn" @tap="handleGenerate">
 								<text class="generate-btn__text">一键生成</text>
-								<image class="generate-btn__icon" src="/static/icons/paper-plane.png" mode="aspectFit" />
+								<xw-lottie-view
+									class="generate-btn__icon"
+									:autoplay="true"
+									url="/static/icon-send.json"
+									:loopCount="-1"
+								/>
 							</view>
 						</view>
 					</view>
@@ -64,7 +84,12 @@
 				<view class="camera-wrapper">
 					<view class="ripple-circle" :class="{ 'ripple-circle--expand': ripplePhase }" />
 					<view class="camera-btn" @tap="handleCamera">
-						<image class="camera-btn__icon" src="/static/icons/camera.png" mode="aspectFit" />
+						<xw-lottie-view
+							class="camera-btn__icon"
+							:autoplay="true"
+							url="/static/icon-camera.json"
+							:loopCount="-1"
+						/>
 					</view>
 				</view>
 			</view>
@@ -100,16 +125,12 @@ let rippleTimer: number | null = null
 
 // ========== Lifecycle ==========
 onReady(() => {
-	// Staggered entrance: single isReady drives all CSS transition-delay groups
 	setTimeout(() => { isReady.value = true }, 50)
 
-	// Blob float: toggle phase every 5s
 	blobTimer = setInterval(() => { blobPhase.value = !blobPhase.value }, 5000)
 
-	// Breathing glow: toggle opacity every 2s
 	breathTimer = setInterval(() => { isBreathing.value = !isBreathing.value }, 2000)
 
-	// Camera ripple: expand → instant reset → expand loop
 	ripplePhase.value = true
 	rippleTimer = setInterval(() => {
 		ripplePhase.value = false
@@ -158,18 +179,10 @@ const handleCamera = () => {
 	transition-duration: 0.55s;
 	transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-.entrance-item--1 {
-	transition-delay: 0s;
-}
-.entrance-item--2 {
-	transition-delay: 0.12s;
-}
-.entrance-item--3 {
-	transition-delay: 0.24s;
-}
-.entrance-item--4 {
-	transition-delay: 0.36s;
-}
+.entrance-item--1 { transition-delay: 0s; }
+.entrance-item--2 { transition-delay: 0.12s; }
+.entrance-item--3 { transition-delay: 0.24s; }
+.entrance-item--4 { transition-delay: 0.36s; }
 .page--ready .entrance-item {
 	opacity: 1;
 	transform: translateY(0);
