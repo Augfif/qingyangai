@@ -19,12 +19,7 @@
 		<!-- Header -->
 		<view class="header entrance-item entrance-item--1" :style="{ paddingTop: headerPadding + 'px' }">
 			<view class="menu-btn" @tap="handleMenu">
-				<xw-lottie-view
-					class="menu-btn__icon"
-					:autoplay="true"
-					url="/static/icon-menu.json"
-					:loopCount="-1"
-				/>
+				<image class="menu-btn__icon" src="/static/icons/list.png" mode="aspectFit" />
 			</view>
 		</view>
 
@@ -35,12 +30,7 @@
 				<!-- AI Greeting -->
 				<view class="ai-greeting">
 					<view class="ai-avatar">
-						<xw-lottie-view
-							class="ai-avatar__icon"
-							:autoplay="true"
-							url="/static/icon-sparkle.json"
-							:loopCount="-1"
-						/>
+						<image class="ai-avatar__icon" src="/static/icons/sparkle.png" mode="aspectFit" />
 					</view>
 					<text class="ai-greeting__text">Hi，今天想怎么吃？</text>
 				</view>
@@ -57,22 +47,12 @@
 						/>
 						<view class="input-actions">
 							<view class="voice-btn" @tap="handleVoice">
-								<xw-lottie-view
-									class="voice-btn__icon"
-									:autoplay="true"
-									url="/static/icon-mic.json"
-									:loopCount="-1"
-								/>
+								<image class="voice-btn__icon" src="/static/icons/microphone.png" mode="aspectFit" />
 								<text class="voice-btn__text">语音输入</text>
 							</view>
 							<view class="generate-btn" @tap="handleGenerate">
 								<text class="generate-btn__text">一键生成</text>
-								<xw-lottie-view
-									class="generate-btn__icon"
-									:autoplay="true"
-									url="/static/icon-send.json"
-									:loopCount="-1"
-								/>
+								<image class="generate-btn__icon" src="/static/icons/paper-plane.png" mode="aspectFit" />
 							</view>
 						</view>
 					</view>
@@ -84,12 +64,7 @@
 				<view class="camera-wrapper">
 					<view class="ripple-circle" :class="{ 'ripple-circle--expand': ripplePhase }" />
 					<view class="camera-btn" @tap="handleCamera">
-						<xw-lottie-view
-							class="camera-btn__icon"
-							:autoplay="true"
-							url="/static/icon-camera.json"
-							:loopCount="-1"
-						/>
+						<image class="camera-btn__icon" src="/static/icons/camera.png" mode="aspectFit" />
 					</view>
 				</view>
 			</view>
