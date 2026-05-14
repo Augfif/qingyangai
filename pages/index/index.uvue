@@ -1,117 +1,106 @@
 <template>
 	<view class="page">
-		<!-- ===== AI Input Bar (Top) ===== -->
-		<view class="ai-bar">
-			<text class="ai-bar__emoji">🤖</text>
-			<text class="ai-bar__placeholder">今天想吃点什么？跟我说就行...</text>
-			<view class="ai-bar__voice">
-				<text class="ai-bar__voice-emoji">🎤</text>
+		<!-- ===== Background Lottie Animation ===== -->
+		<xw-lottie-view
+			class="bg-lottie"
+			:autoplay="true"
+			url="/static/Ani_02.json"
+			:loopCount="-1"
+		/>
+
+		<!-- ===== Header: Menu Button ===== -->
+		<view class="header">
+			<view class="menu-btn" @tap="handleMenu">
+				<xw-lottie-view
+					class="menu-btn__icon"
+					:autoplay="true"
+					url="/static/icon-menu.json"
+					:loopCount="-1"
+				/>
 			</view>
 		</view>
 
-		<!-- ===== Section Header ===== -->
-		<view class="section-header">
-			<text class="section-header__title">📋 今日膳食任务</text>
-			<text class="section-header__date">{{ todayDate }}</text>
-		</view>
-
-		<!-- ===== Meal Task Cards (Scrollable) ===== -->
-		<scroll-view class="task-scroll" scroll-y="true" show-scrollbar="false">
-			<MealTaskCard
-				v-for="meal in mealTasks"
-				:key="meal.id"
-				:task="meal"
-			/>
-
-			<!-- Extra: Daily summary card when all done -->
-			<view v-if="allCompleted" class="summary-card">
-				<text class="summary-card__emoji">🎉</text>
-				<text class="summary-card__title">太棒了！今日全部完成</text>
-				<text class="summary-card__sub">
-					总摄入 {{ totalCalories }} kcal · 营养均衡达标
-				</text>
+		<!-- ===== Main Content Area ===== -->
+		<view class="main-content">
+			<!-- AI Greeting -->
+			<view class="greeting">
+				<view class="greeting__avatar">
+					<xw-lottie-view
+						class="greeting__avatar-icon"
+						:autoplay="true"
+						url="/static/icon-sparkle.json"
+						:loopCount="-1"
+					/>
+				</view>
+				<text class="greeting__text">Hi，今天想怎么吃？</text>
 			</view>
 
-			<!-- Bottom spacer for FAB + TabBar clearance -->
-			<view class="task-scroll__spacer" />
-		</scroll-view>
+			<!-- Input Card -->
+			<view class="input-card">
+				<textarea
+					class="input-card__textarea"
+					rows="3"
+					placeholder="例如：我想调理肠胃、不想节食，给我安排一天的计划..."
+				/>
 
-		<!-- ===== Floating Camera FAB Button ===== -->
-		<view class="fab-wrapper">
-			<view class="fab-ring" />
-			<view class="fab-button">
-				<text class="fab-button__emoji">📸</text>
+				<view class="input-card__actions">
+					<view class="voice-btn" @tap="handleVoice">
+						<xw-lottie-view
+							class="voice-btn__icon"
+							:autoplay="true"
+							url="/static/icon-mic.json"
+							:loopCount="-1"
+						/>
+						<text class="voice-btn__text">语音输入</text>
+					</view>
+					<view class="generate-btn" @tap="handleGenerate">
+						<text class="generate-btn__text">一键生成</text>
+						<xw-lottie-view
+							class="generate-btn__icon"
+							:autoplay="true"
+							url="/static/icon-send.json"
+							:loopCount="-1"
+						/>
+					</view>
+				</view>
 			</view>
-			<text class="fab-label">一键拍照打卡</text>
 		</view>
+
+		<!-- ===== Camera Button ===== -->
+		<view class="camera-section">
+			<view class="camera-btn" @tap="handleCamera">
+				<xw-lottie-view
+					class="camera-btn__icon"
+					:autoplay="true"
+					url="/static/icon-camera.json"
+					:loopCount="-1"
+				/>
+			</view>
+		</view>
+
+		<!-- ===== Home Indicator ===== -->
+		<view class="home-indicator" />
 	</view>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import MealTaskCard from '@/components/MealTaskCard.uvue'
+// ========== HANDLERS ==========
 
-// ========== MOCK DATA ==========
-
-type MealTask = {
-	id: string
-	period: 'breakfast' | 'lunch' | 'dinner'
-	periodEmoji: string
-	timeLabel: string
-	title: string
-	dishes: string
-	calories: number
-	status: 'completed' | 'pending'
-	aiTip: string
+const handleMenu = () => {
+	// TODO: open menu
 }
 
-const todayDate = '2026年5月12日 周二'
+const handleVoice = () => {
+	// TODO: start voice input
+}
 
-const mealTasks: MealTask[] = [
-	{
-		id: '1',
-		period: 'breakfast',
-		periodEmoji: '🌅',
-		timeLabel: '07:00-09:00',
-		title: '元气早餐',
-		dishes: '牛油果鸡蛋吐司 · 燕麦拿铁 · 蓝莓一小碗',
-		calories: 420,
-		status: 'completed',
-		aiTip: '优质脂肪+蛋白，助力上午专注力',
-	},
-	{
-		id: '2',
-		period: 'lunch',
-		periodEmoji: '☀️',
-		timeLabel: '11:30-13:00',
-		title: '均衡午餐',
-		dishes: '香煎三文鱼 · 藜麦沙拉 · 蒸西兰花 · 杂粮饭',
-		calories: 580,
-		status: 'pending',
-		aiTip: 'Omega-3 对大脑友好，记得细嚼慢咽',
-	},
-	{
-		id: '3',
-		period: 'dinner',
-		periodEmoji: '🌙',
-		timeLabel: '17:30-19:00',
-		title: '轻食晚餐',
-		dishes: '菌菇豆腐汤 · 清炒时蔬 · 红薯半个',
-		calories: 350,
-		status: 'pending',
-		aiTip: '低负担晚餐，有助于睡眠质量',
-	},
-]
+const handleGenerate = () => {
+	// TODO: generate meal plan
+}
 
-// ========== COMPUTED ==========
-
-const allCompleted = computed(() =>
-	mealTasks.every((m) => m.status === 'completed'),
-)
-
-const totalCalories = computed(() =>
-	mealTasks.reduce((sum, m) => sum + m.calories, 0),
-)
+const handleCamera = () => {
+	// TODO: open camera for photo check-in
+}
 </script>
 
 <style scoped>
@@ -119,133 +108,169 @@ const totalCalories = computed(() =>
 .page {
 	flex: 1;
 	flex-direction: column;
-	background-color: #f8fafc;
-	padding: 16px 18px 0 18px;
-	position: relative;
+	background: linear-gradient(-45deg, #e6f6ee, #f7fdfa, #d5efe1, #e0f2e9);
 }
 
-/* ===== AI Input Bar ===== */
-.ai-bar {
-	flex-direction: row;
-	align-items: center;
-	background-color: rgba(255, 255, 255, 0.85);
-	border-radius: 24px;
-	padding: 14px 18px;
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-	border: 1px solid rgba(16, 185, 129, 0.10);
-	margin-bottom: 20px;
-}
-.ai-bar__emoji {
-	font-size: 24px;
-	margin-right: 12px;
-}
-.ai-bar__placeholder {
-	flex: 1;
-	font-size: 14px;
-	color: #94a3b8;
-	line-height: 1.4;
-}
-.ai-bar__voice {
-	width: 38px;
-	height: 38px;
-	border-radius: 19px;
-	background-color: rgba(16, 185, 129, 0.12);
-	align-items: center;
-	justify-content: center;
-	margin-left: 10px;
-}
-.ai-bar__voice-emoji {
-	font-size: 18px;
-}
-
-/* ===== Section Header ===== */
-.section-header {
-	flex-direction: row;
-	align-items: flex-end;
-	justify-content: space-between;
-	margin-bottom: 12px;
-	padding: 0 4px;
-}
-.section-header__title {
-	font-size: 17px;
-	font-weight: 700;
-	color: #1e293b;
-}
-.section-header__date {
-	font-size: 12px;
-	color: #94a3b8;
-	font-weight: 500;
-}
-
-/* ===== Task Scroll Area ===== */
-.task-scroll {
-	flex: 1;
-	flex-direction: column;
-}
-.task-scroll__spacer {
-	height: 130px;
-}
-
-/* ===== Summary Card (all completed) ===== */
-.summary-card {
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	background-color: rgba(16, 185, 129, 0.08);
-	border-radius: 20px;
-	padding: 28px 20px;
-	margin-bottom: 14px;
-	border: 1px dashed rgba(16, 185, 129, 0.25);
-}
-.summary-card__emoji {
-	font-size: 40px;
-	margin-bottom: 10px;
-}
-.summary-card__title {
-	font-size: 17px;
-	font-weight: 700;
-	color: #1e293b;
-	margin-bottom: 6px;
-}
-.summary-card__sub {
-	font-size: 13px;
-	color: #64748b;
-}
-
-/* ===== Floating Camera FAB ===== */
-.fab-wrapper {
+/* ===== Background Lottie ===== */
+.bg-lottie {
 	position: absolute;
-	bottom: 20px;
+	top: 0;
 	left: 0;
-	right: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 0;
+}
+
+/* ===== Header ===== */
+.header {
+	flex-direction: row;
+	align-items: center;
+	padding: 50px 24px 10px 24px;
+	z-index: 10;
+}
+.menu-btn {
+	width: 44px;
+	height: 44px;
+	border-radius: 14px;
+	background-color: rgba(255, 255, 255, 0.40);
+	border: 1px solid rgba(255, 255, 255, 0.50);
 	align-items: center;
 	justify-content: center;
+}
+.menu-btn__icon {
+	width: 24px;
+	height: 24px;
+}
+
+/* ===== Main Content ===== */
+.main-content {
+	flex: 1;
 	flex-direction: column;
+	padding: 0 24px;
+	margin-top: 30px;
+	z-index: 10;
 }
-.fab-ring {
-	position: absolute;
-	width: 84px;
-	height: 84px;
-	border-radius: 42px;
-	border: 2px solid rgba(16, 185, 129, 0.25);
-	background-color: transparent;
+
+/* ===== AI Greeting ===== */
+.greeting {
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 15px;
 }
-.fab-button {
-	width: 76px;
-	height: 76px;
-	border-radius: 38px;
-	background-color: #10b981;
+.greeting__avatar {
+	width: 32px;
+	height: 32px;
+	border-radius: 16px;
+	background-color: #6eb996;
 	align-items: center;
 	justify-content: center;
-	box-shadow: 0 8px 28px rgba(16, 185, 129, 0.40);
+	margin-right: 10px;
 }
-.fab-button__emoji {
-	font-size: 32px;
+.greeting__avatar-icon {
+	width: 18px;
+	height: 18px;
 }
-.fab-label {
-	font-size: 12px;
-	color: #64748b;
+.greeting__text {
+	font-size: 16px;
 	font-weight: 600;
-	margin-top: 8px;
+	color: #2d3436;
+}
+
+/* ===== Input Card ===== */
+.input-card {
+	flex-direction: column;
+	background-color: rgba(255, 255, 255, 0.70);
+	border: 2px solid rgba(255, 255, 255, 0.80);
+	border-radius: 24px;
+	padding: 20px;
+}
+.input-card__textarea {
+	width: 100%;
+	background-color: transparent;
+	border: none;
+	font-size: 18px;
+	color: #2d3436;
+	line-height: 1.5;
+}
+.input-card__actions {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	margin-top: 15px;
+	border-top: 1px solid rgba(0, 0, 0, 0.05);
+	padding-top: 15px;
+}
+
+/* ===== Voice Button ===== */
+.voice-btn {
+	flex-direction: row;
+	align-items: center;
+}
+.voice-btn__icon {
+	width: 22px;
+	height: 22px;
+	margin-right: 5px;
+}
+.voice-btn__text {
+	font-size: 15px;
+	font-weight: 600;
+	color: #6eb996;
+}
+
+/* ===== Generate Button ===== */
+.generate-btn {
+	flex-direction: row;
+	align-items: center;
+	background: linear-gradient(135deg, #6eb996, #58a581);
+	border-radius: 16px;
+	padding: 12px 20px;
+	box-shadow: 0 6px 15px rgba(88, 165, 129, 0.30);
+}
+.generate-btn:active {
+	transform: scale(0.95);
+}
+.generate-btn__text {
+	font-size: 15px;
+	font-weight: bold;
+	color: #ffffff;
+	margin-right: 8px;
+}
+.generate-btn__icon {
+	width: 18px;
+	height: 18px;
+}
+
+/* ===== Camera Section ===== */
+.camera-section {
+	flex-direction: row;
+	justify-content: center;
+	margin-bottom: 50px;
+	z-index: 10;
+}
+.camera-btn {
+	width: 80px;
+	height: 80px;
+	border-radius: 40px;
+	background-color: rgba(255, 255, 255, 0.85);
+	border: 4px solid #ffffff;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 15px 35px rgba(110, 185, 150, 0.25);
+}
+.camera-btn__icon {
+	width: 36px;
+	height: 36px;
+}
+
+/* ===== Home Indicator ===== */
+.home-indicator {
+	width: 134px;
+	height: 5px;
+	background-color: rgba(0, 0, 0, 0.20);
+	border-radius: 3px;
+	position: absolute;
+	bottom: 8px;
+	align-self: center;
+	z-index: 10;
 }
 </style>
