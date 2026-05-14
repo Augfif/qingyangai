@@ -15,6 +15,13 @@
 			}
 		},
 		{
+			"path": "pages/tasks/tasks",
+			"style": {
+				"navigationBarTitleText": "三餐任务卡",
+				"navigationBarBackgroundColor": "#f8fafc"
+			}
+		},
+		{
 			"path": "pages/community/community",
 			"style": {
 				"navigationBarTitleText": "激励社区",

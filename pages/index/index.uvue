@@ -71,6 +71,22 @@
 				</view>
 			</view>
 		</scroll-view>
+
+		<!-- ===== Drawer ===== -->
+		<view class="drawer-mask" :class="{ 'drawer-mask--show': showDrawer }" @tap="showDrawer = false" />
+		<view class="drawer-panel" :class="{ 'drawer-panel--show': showDrawer }" :style="{ paddingTop: headerPadding + 20 + 'px' }">
+			<view class="drawer-header">
+				<text class="drawer-header__title">轻养AI</text>
+			</view>
+			<view class="drawer-menu">
+				<view class="drawer-item" @tap="showDrawer = false">
+					<text class="drawer-item__text drawer-item__text--current">AI 膳食助理</text>
+				</view>
+				<view class="drawer-item" @tap="goTasks">
+					<text class="drawer-item__text">三餐任务卡</text>
+				</view>
+			</view>
+		</view>
 	</view>
 </template>
 
@@ -84,6 +100,9 @@ const headerPadding = (sysInfo.statusBarHeight ?? 25) + 10
 
 // ========== Entrance Animation ==========
 const isReady = ref(false)
+
+// ========== Drawer ==========
+const showDrawer = ref(false)
 
 // ========== Background Blob Float ==========
 const blobPhase = ref(false)
@@ -120,7 +139,7 @@ onUnload(() => {
 
 // ========== Event Handlers ==========
 const handleMenu = () => {
-	// TODO: Open side menu
+	showDrawer.value = true
 }
 
 const handleVoice = () => {
@@ -133,6 +152,11 @@ const handleGenerate = () => {
 
 const handleCamera = () => {
 	// TODO: Open camera for food recognition
+}
+
+const goTasks = () => {
+	showDrawer.value = false
+	uni.navigateTo({ url: '/pages/tasks/tasks' })
 }
 </script>
 
@@ -386,5 +410,70 @@ const handleCamera = () => {
 .camera-btn__icon {
 	width: 36px;
 	height: 36px;
+}
+/* ===== Drawer ===== */
+.drawer-mask {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(0, 0, 0, 0.5);
+	z-index: 100;
+	opacity: 0;
+	transition-property: opacity;
+	transition-duration: 0.3s;
+	transition-timing-function: ease-out;
+	pointer-events: none;
+}
+.drawer-mask--show {
+	opacity: 1;
+	pointer-events: auto;
+}
+.drawer-panel {
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	width: 70%;
+	background: linear-gradient(180deg, #ffffff 0%, #f7fdfa 100%);
+	z-index: 101;
+	transform: translateX(-100%);
+	transition-property: transform;
+	transition-duration: 0.3s;
+	transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+	padding-left: 28px;
+	padding-right: 28px;
+}
+.drawer-panel--show {
+	transform: translateX(0);
+}
+.drawer-header__title {
+	font-size: 28px;
+	font-weight: bold;
+	color: #10b981;
+	margin-bottom: 40px;
+}
+.drawer-menu {
+	flex-direction: column;
+}
+.drawer-item {
+	padding: 16px 20px;
+	border-radius: 14px;
+	margin-bottom: 6px;
+	background-color: transparent;
+	transition-property: background-color;
+	transition-duration: 0.2s;
+}
+.drawer-item--current {
+	background-color: rgba(16, 185, 129, 0.10);
+}
+.drawer-item__text {
+	font-size: 17px;
+	font-weight: 600;
+	color: #1e293b;
+}
+.drawer-item__text--current {
+	color: #10b981;
 }
 </style>

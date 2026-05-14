@@ -1,0 +1,305 @@
+<template>
+	<view class="page">
+		<!-- Header Info -->
+		<view class="page-header">
+			<view class="page-header__top">
+				<text class="page-header__date">{{ mealPlan.date }}</text>
+				<view class="page-header__remind" @tap="handleRemind">
+					<text class="page-header__remind-text">设置提醒</text>
+				</view>
+			</view>
+			<text class="page-header__goal">今日目标：{{ mealPlan.goal }}</text>
+		</view>
+
+		<!-- Meal Cards -->
+		<scroll-view class="content" scroll-y="true">
+			<view
+				v-for="meal in mealPlan.meals"
+				:key="meal.title"
+				class="meal-card"
+			>
+				<view class="meal-card__header">
+					<text class="meal-card__title">{{ meal.title }}</text>
+					<text class="meal-card__time">{{ meal.time }}</text>
+				</view>
+
+				<view class="meal-card__items">
+					<view
+						v-for="item in meal.items"
+						:key="item.name"
+						class="meal-card__item"
+						@tap="toggleItem(meal, item)"
+					>
+						<view class="meal-card__checkbox" :class="{ 'meal-card__checkbox--checked': item.done }">
+							<text class="meal-card__checkmark">{{ item.done ? '✓' : '' }}</text>
+						</view>
+						<text class="meal-card__item-name" :class="{ 'meal-card__item-name--done': item.done }">{{ item.name }}</text>
+					</view>
+				</view>
+
+				<view class="meal-card__extra">
+					<text class="meal-card__extra-text">{{ meal.extra }}</text>
+				</view>
+			</view>
+
+			<view style="height: 100px;" />
+		</scroll-view>
+
+		<!-- Bottom Action Bar -->
+		<view class="bottom-bar">
+			<view class="bottom-bar__btn bottom-bar__btn--secondary" @tap="handlePhoto">
+				<text class="bottom-bar__btn-text bottom-bar__btn-text--secondary">拍照记录</text>
+			</view>
+			<view class="bottom-bar__btn bottom-bar__btn--primary" @tap="handleCheckIn">
+				<text class="bottom-bar__btn-text bottom-bar__btn-text--primary">完成打卡</text>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+
+// ========== TYPES ==========
+
+type MealItem = {
+	name: string
+	done: boolean
+}
+
+type Meal = {
+	title: string
+	time: string
+	items: MealItem[]
+	extra: string
+}
+
+type MealPlan = {
+	date: string
+	goal: string
+	meals: Meal[]
+}
+
+// ========== MEAL PLAN DATA (mock, ready for AI injection) ==========
+
+const mealPlan = ref<MealPlan>({
+	date: '2026年5月14日',
+	goal: '调理肠胃 · 低脂清淡',
+	meals: [
+		{
+			title: '早餐',
+			time: '07:00 - 08:00',
+			items: [
+				{ name: '小米南瓜粥', done: false },
+				{ name: '水煮蛋 1个', done: false },
+				{ name: '蒸红薯 小份', done: false },
+			],
+			extra: '推荐：可搭配一小碟凉拌黄瓜',
+		},
+		{
+			title: '午餐',
+			time: '12:00 - 12:30',
+			items: [
+				{ name: '清蒸鲈鱼', done: false },
+				{ name: '蒜蓉西兰花', done: false },
+				{ name: '杂粮饭 半碗', done: false },
+			],
+			extra: '约 450 kcal · 高蛋白低脂肪',
+		},
+		{
+			title: '晚餐',
+			time: '18:00 - 18:30',
+			items: [
+				{ name: '番茄豆腐汤', done: false },
+				{ name: '凉拌鸡丝', done: false },
+				{ name: '蒸玉米 半根', done: false },
+			],
+			extra: '小贴士：晚餐不宜过晚，建议睡前3小时完成进食',
+		},
+	],
+})
+
+// ========== EVENT HANDLERS ==========
+
+const toggleItem = (meal: Meal, item: MealItem) => {
+	item.done = !item.done
+}
+
+const handleRemind = () => {
+	uni.showToast({ title: '提醒已设置', icon: 'none' })
+}
+
+const handlePhoto = () => {
+	uni.showToast({ title: '拍照功能开发中', icon: 'none' })
+}
+
+const handleCheckIn = () => {
+	uni.showToast({ title: '打卡成功！', icon: 'none' })
+}
+</script>
+
+<style scoped>
+/* ===== Page ===== */
+.page {
+	flex: 1;
+	flex-direction: column;
+	background-color: #f8fafc;
+}
+
+/* ===== Page Header ===== */
+.page-header {
+	flex-direction: column;
+	padding: 16px 20px 8px 20px;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+	background-color: #ffffff;
+}
+.page-header__top {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+.page-header__date {
+	font-size: 16px;
+	font-weight: 700;
+	color: #1e293b;
+}
+.page-header__remind {
+	padding: 6px 14px;
+	border-radius: 10px;
+	background-color: rgba(16, 185, 129, 0.10);
+}
+.page-header__remind-text {
+	font-size: 13px;
+	font-weight: 600;
+	color: #10b981;
+}
+.page-header__goal {
+	font-size: 14px;
+	color: #64748b;
+}
+
+/* ===== Scrollable Content ===== */
+.content {
+	flex: 1;
+	padding: 16px 18px;
+	box-sizing: border-box;
+}
+
+/* ===== Meal Card ===== */
+.meal-card {
+	flex-direction: column;
+	background-color: rgba(255, 255, 255, 0.85);
+	border-radius: 20px;
+	padding: 18px 18px 16px 18px;
+	margin-bottom: 14px;
+	border: 1px solid rgba(16, 185, 129, 0.10);
+}
+.meal-card__header {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 14px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+.meal-card__title {
+	font-size: 18px;
+	font-weight: bold;
+	color: #1e293b;
+}
+.meal-card__time {
+	font-size: 12px;
+	color: #94a3b8;
+	font-weight: 500;
+}
+
+/* ===== Meal Items ===== */
+.meal-card__items {
+	flex-direction: column;
+	margin-bottom: 12px;
+}
+.meal-card__item {
+	flex-direction: row;
+	align-items: center;
+	padding: 8px 0;
+}
+.meal-card__checkbox {
+	width: 22px;
+	height: 22px;
+	border-radius: 11px;
+	border: 2px solid #cbd5e1;
+	align-items: center;
+	justify-content: center;
+	margin-right: 12px;
+	transition-property: background-color, border-color;
+	transition-duration: 0.2s;
+}
+.meal-card__checkbox--checked {
+	background-color: #10b981;
+	border-color: #10b981;
+}
+.meal-card__checkmark {
+	font-size: 13px;
+	color: #ffffff;
+	font-weight: bold;
+}
+.meal-card__item-name {
+	font-size: 16px;
+	font-weight: 500;
+	color: #1e293b;
+	flex: 1;
+	transition-property: color;
+	transition-duration: 0.2s;
+}
+.meal-card__item-name--done {
+	color: #94a3b8;
+	text-decoration: line-through;
+}
+
+/* ===== Extra Info ===== */
+.meal-card__extra {
+	background-color: rgba(16, 185, 129, 0.06);
+	border-radius: 12px;
+	padding: 10px 14px;
+}
+.meal-card__extra-text {
+	font-size: 13px;
+	color: #64748b;
+	line-height: 1.5;
+}
+
+/* ===== Bottom Action Bar ===== */
+.bottom-bar {
+	flex-direction: row;
+	padding: 16px 18px;
+	padding-bottom: 32px;
+	border-top: 1px solid rgba(0, 0, 0, 0.04);
+	background-color: #ffffff;
+}
+.bottom-bar__btn {
+	flex: 1;
+	height: 50px;
+	border-radius: 16px;
+	align-items: center;
+	justify-content: center;
+}
+.bottom-bar__btn--primary {
+	background-color: #10b981;
+	margin-left: 12px;
+}
+.bottom-bar__btn--secondary {
+	background-color: transparent;
+	border: 1.5px solid #10b981;
+}
+.bottom-bar__btn-text {
+	font-size: 16px;
+	font-weight: 600;
+}
+.bottom-bar__btn-text--primary {
+	color: #ffffff;
+}
+.bottom-bar__btn-text--secondary {
+	color: #10b981;
+}
+</style>
