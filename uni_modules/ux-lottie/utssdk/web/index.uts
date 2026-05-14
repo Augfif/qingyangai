@@ -1,0 +1,69 @@
+import lottie from 'lottie-web'
+import { AnimationItem, AnimationDirection } from 'lottie-web'
+
+export class UxLottie {
+	
+	anim ?: AnimationItem = null
+	id: string
+	src: string = ''
+	
+	constructor(id: string) {
+		this.id = id
+	}
+	
+	initData(src: string, callback: () => void) {
+		this.src = src
+		this.destroy()
+		this.loadAnim()
+		
+		callback()
+	}
+	
+	loadAnim() {
+		if(this.anim != null) {
+			return
+		}
+		
+		this.anim = lottie.loadAnimation({
+			container: uni.getElementById(this.id)!,
+			renderer: 'svg',
+			loop: false,
+			autoplay: false,
+			path: this.src,
+		})
+	}
+	
+	play() {
+		this.loadAnim()
+		this.anim?.play()
+	}
+	
+	stop() {
+		this.anim?.stop()
+	}
+	
+	pause() {
+		this.anim?.pause()
+	}
+	
+	resume() {
+		this.anim?.play()
+	}
+	
+	destroy() {
+		this.anim?.destroy()
+		this.anim = null
+	}
+	
+	setDirection(direction: number) {
+		this.anim?.setDirection(direction as AnimationDirection)
+	}
+	
+	setRepeatCount(count: number) {
+		this.anim?.setLoop(false)
+	}
+	
+	loop(loop: boolean) {
+		this.anim?.setLoop(loop)
+	}
+}

@@ -10,7 +10,7 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "膳食康养",
+				"navigationStyle": "custom",
 				"navigationBarBackgroundColor": "#f8fafc"
 			}
 		},

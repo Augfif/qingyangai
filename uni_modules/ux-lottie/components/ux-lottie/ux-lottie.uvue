@@ -1,0 +1,164 @@
+<template>
+	<!-- #ifdef APP -->
+	<native-view @init="onInit"></native-view>
+	<!-- #endif -->
+	
+	<!-- #ifdef WEB -->
+	<view :id="myId" class="loading"></view>
+	<!-- #endif -->
+	
+	<!-- #ifdef MP -->
+	<view :id="myId" class="loading"></view>
+	<!-- #endif -->
+</template>
+
+<script setup lang="uts">
+	/**
+	* lottie 动画组件
+	* @demo pages/component/lottie.uvue
+	* @tutorial https://www.uxframe.cn/component/lottie.html
+	* @property {String} 			src						String | 路径
+	* @property {Boolean} 			loop					Boolean | 循环播放 (默认 true)
+	* @property {Number} 			repeat					Number | 重复次数 (默认 1)
+	* @property {Boolean} 			autoplay				Boolean | 自动播放 (默认 true)
+	* @event {Function} 			loaded 					Function | 加载成功时触发
+	* @author UxFrame
+	* @date 2025-04-07 21:06:21
+	*/
+   
+	import { UxLottie } from '@/uni_modules/ux-lottie'
+	
+	const props = defineProps({
+		src: {
+			type: String,
+			default: ''
+		}, 
+		loop: {
+			type: Boolean,
+			default: true
+		}, 
+		repeat: {
+			type: Number,
+			default: 1
+		}, 
+		autoplay: {
+			type: Boolean,
+			default: true
+		}, 
+	})
+	
+	const emit = defineEmits<{
+		(e : "loaded") : void
+	}>()
+	
+	function uuid() : string {
+		const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('')
+		const uuid : string[] = []
+		
+		for (let i = 0; i < 36; i++) {
+			let r = 0 | Math.random() * 16
+			let c = chars[(i == 19) ? (r & 0x3) | 0x8 : r]
+			uuid.push(c)
+		}
+		
+		// rfc4122标准要求返回的uuid中,某些位为固定的字符
+		uuid[8] = '-'
+		uuid[13] = '-'
+		uuid[18] = '-'
+		uuid[23] = '-'
+		uuid[14] = '4'
+		
+		return `${uuid.join('')}`
+	}
+	
+	let lottie : UxLottie | null = null
+	const myId = `ux-lottie-${uuid()}`
+	let forwords = true
+	
+	/**
+	 * 播放
+	 */
+	function play() {
+		if(props.loop) {
+			lottie?.loop(true)
+		} else {
+			lottie?.setRepeatCount(props.repeat)
+		}
+		
+		lottie?.setDirection(forwords ? 1 : -1)
+		lottie?.play()
+	}
+	
+	function playBackwords() {
+		forwords = false
+		play()
+	}
+	
+	/**
+	 * 停止
+	 */
+	function stop() {
+		lottie?.stop()
+	}
+	
+	/**
+	 * 暂停
+	 */
+	function pause() {
+		lottie?.pause()
+	}
+	
+	/**
+	 * 恢复播放
+	 */
+	function resume() {
+		lottie?.resume()
+	}
+	
+	/**
+	 * 销毁
+	 */
+	function destroy() {
+		lottie?.destroy()
+	}
+	
+	// #ifdef APP
+	function onInit(e : UniNativeViewInitEvent) {
+		lottie = new UxLottie(e.detail.element);
+		lottie?.initData(props.src, () => {
+			if(props.autoplay) {
+				forwords = true
+				play()
+			}
+			
+			emit('loaded')
+		})
+	}
+	// #endif
+	
+	// #ifdef WEB
+	onMounted(() => {
+		lottie = new UxLottie(myId);
+		lottie?.initData(props.src, () => {
+			if(props.autoplay) {
+				forwords = true
+				play()
+			}
+			
+			emit('loaded')
+		})
+	})
+	// #endif
+	
+	defineExpose({
+		play,
+		playBackwords,
+		stop,
+		pause,
+		resume,
+		destroy
+	})
+</script>
+
+<style>
+</style>

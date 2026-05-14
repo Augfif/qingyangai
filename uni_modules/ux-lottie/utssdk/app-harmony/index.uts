@@ -1,0 +1,99 @@
+import { BuilderNode } from "@kit.ArkUI"
+import { LottieView } from "./builder.ets"
+
+interface UxLottieOptions {
+    src : string,
+	loop: boolean,
+	repeat: number,
+	autoplay: boolean,
+	direction: number,
+	command: string
+}
+
+export class UxLottie {
+
+	private $element : UniNativeViewElement; 
+	private builder : BuilderNode<[UxLottieOptions]> | null = null
+	
+	private params : UxLottieOptions = {
+	    src: '',
+		loop: true,
+		repeat: 1,
+		autoplay: true,
+		direction: 1,
+		command: ''
+	}
+	
+	constructor(element : UniNativeViewElement) {
+		this.builder = element.bindHarmonyWrappedBuilder(wrapBuilder<[UxLottieOptions]>(LottieView), this.params)
+		this.$element = element
+		this.$element.bindHarmonyController(this)
+	}
+	
+	initData(src: string, callback: () => void) {
+		if(src == '') {
+			return
+		}
+		
+		if(src.startsWith("http://") || src.startsWith("https://")) {
+			this.params.src = src
+			callback()
+		} else {
+			let f = uni.getFileSystemManager()
+			f.readFile({
+				filePath: src,
+				encoding: 'utf-8',
+				success: (res) => {
+					this.params.src = res.data as string
+				},
+				fail: () => {
+					this.params.src = UTSHarmony.getResourcePath(src)
+				},
+				complete: () => {
+					callback()
+				}
+			})
+		}
+	}
+	
+	play() {
+		this.params.command = 'play-' + new Date().getTime()
+		this.builder?.update(this.params)
+	}
+	
+	stop() {
+		this.params.command = 'stop-' + new Date().getTime()
+		this.builder?.update(this.params)
+	}
+	
+	pause() {
+		this.params.command = 'pause-' + new Date().getTime()
+		this.builder?.update(this.params)
+	}
+	
+	resume() {
+		this.params.command = 'resume-' + new Date().getTime()
+		this.builder?.update(this.params)
+	}
+	
+	destroy() {
+		this.params.command = 'destroy-' + new Date().getTime()
+		this.builder?.update(this.params)
+	}
+	
+	setDirection(direction: number) {
+		this.params.direction = direction
+	}
+	
+	setRepeatCount(count: number) {
+		this.params.repeat = count
+	}
+	
+	loop(loop: boolean) {
+		this.params.loop = loop
+	}
+	
+	autoplay(autoplay: boolean) {
+		this.params.autoplay = autoplay
+	}
+}

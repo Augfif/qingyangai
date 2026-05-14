@@ -1,251 +1,418 @@
 <template>
-	<view class="page">
-		<!-- ===== AI Input Bar (Top) ===== -->
-		<view class="ai-bar">
-			<text class="ai-bar__emoji">🤖</text>
-			<text class="ai-bar__placeholder">今天想吃点什么？跟我说就行...</text>
-			<view class="ai-bar__voice">
-				<text class="ai-bar__voice-emoji">🎤</text>
-			</view>
-		</view>
-
-		<!-- ===== Section Header ===== -->
-		<view class="section-header">
-			<text class="section-header__title">📋 今日膳食任务</text>
-			<text class="section-header__date">{{ todayDate }}</text>
-		</view>
-
-		<!-- ===== Meal Task Cards (Scrollable) ===== -->
-		<scroll-view class="task-scroll" scroll-y="true" show-scrollbar="false">
-			<MealTaskCard
-				v-for="meal in mealTasks"
-				:key="meal.id"
-				:task="meal"
+	<view class="page" :class="{ 'page--ready': isReady }">
+		<!-- Background Blobs -->
+		<view class="bg-blobs entrance-item entrance-item--1">
+			<image
+				class="blob blob-1"
+				:class="{ 'blob-1--shift': blobPhase }"
+				src="/static/blobs/blob-1.png"
+				mode="aspectFill"
 			/>
-
-			<!-- Extra: Daily summary card when all done -->
-			<view v-if="allCompleted" class="summary-card">
-				<text class="summary-card__emoji">🎉</text>
-				<text class="summary-card__title">太棒了！今日全部完成</text>
-				<text class="summary-card__sub">
-					总摄入 {{ totalCalories }} kcal · 营养均衡达标
-				</text>
-			</view>
-
-			<!-- Bottom spacer for FAB + TabBar clearance -->
-			<view class="task-scroll__spacer" />
-		</scroll-view>
-
-		<!-- ===== Floating Camera FAB Button ===== -->
-		<view class="fab-wrapper">
-			<view class="fab-ring" />
-			<view class="fab-button">
-				<text class="fab-button__emoji">📸</text>
-			</view>
-			<text class="fab-label">一键拍照打卡</text>
+			<image
+				class="blob blob-2"
+				:class="{ 'blob-2--shift': blobPhase }"
+				src="/static/blobs/blob-2.png"
+				mode="aspectFill"
+			/>
 		</view>
+
+		<!-- Header -->
+		<view class="header entrance-item entrance-item--1" :style="{ paddingTop: headerPadding + 'px' }">
+			<view class="menu-btn" @tap="handleMenu">
+				<image class="menu-btn__icon" src="/static/icons/list.png" mode="aspectFit" />
+			</view>
+		</view>
+
+		<!-- Main Content -->
+		<view class="main-content">
+			<!-- Dialogue Section -->
+			<view class="dialogue-section entrance-item entrance-item--2">
+				<!-- AI Greeting -->
+				<view class="ai-greeting">
+					<view class="ai-avatar">
+						<image class="ai-avatar__icon" src="/static/icons/sparkle.png" mode="aspectFit" />
+					</view>
+					<text class="ai-greeting__text">Hi，今天想怎么吃？</text>
+				</view>
+
+				<!-- Input Card with Breathing Glow -->
+				<view class="input-card-wrapper">
+					<view class="input-glow-bg" :class="{ 'input-glow-bg--active': isBreathing }" />
+					<view class="input-card">
+						<textarea
+							class="input-card__textarea"
+							placeholder="例如：我想调理肠胃、不想节食，给我安排一天的计划..."
+							placeholder-style="color:#a0aec0;font-size:18px;line-height:1.5;"
+							:auto-height="true"
+						/>
+						<view class="input-actions">
+							<view class="voice-btn" @tap="handleVoice">
+								<image class="voice-btn__icon" src="/static/icons/microphone.png" mode="aspectFit" />
+								<text class="voice-btn__text">语音输入</text>
+							</view>
+							<view class="generate-btn" @tap="handleGenerate">
+								<text class="generate-btn__text">一键生成</text>
+								<image class="generate-btn__icon" src="/static/icons/paper-plane.png" mode="aspectFit" />
+							</view>
+						</view>
+					</view>
+				</view>
+			</view>
+
+			<!-- Camera Section -->
+			<view class="camera-section entrance-item entrance-item--3">
+				<view class="camera-wrapper">
+					<view class="ripple-circle" :class="{ 'ripple-circle--expand': ripplePhase }" />
+					<view class="camera-btn" @tap="handleCamera">
+						<image class="camera-btn__icon" src="/static/icons/camera.png" mode="aspectFit" />
+					</view>
+				</view>
+			</view>
+		</view>
+
+		<!-- Home Indicator -->
+		<view class="home-indicator entrance-item entrance-item--4" />
 	</view>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import MealTaskCard from '@/components/MealTaskCard.uvue'
+import { ref } from 'vue'
+import { onReady, onUnload } from '@dcloudio/uni-app'
 
-// ========== MOCK DATA ==========
+// ========== Status Bar ==========
+const sysInfo = uni.getSystemInfoSync()
+const headerPadding = (sysInfo.statusBarHeight ?? 25) + 10
 
-type MealTask = {
-	id: string
-	period: 'breakfast' | 'lunch' | 'dinner'
-	periodEmoji: string
-	timeLabel: string
-	title: string
-	dishes: string
-	calories: number
-	status: 'completed' | 'pending'
-	aiTip: string
+// ========== Entrance Animation ==========
+const isReady = ref(false)
+
+// ========== Background Blob Float ==========
+const blobPhase = ref(false)
+let blobTimer: number | null = null
+
+// ========== Input Card Breathing Glow ==========
+const isBreathing = ref(false)
+let breathTimer: number | null = null
+
+// ========== Camera Ripple ==========
+const ripplePhase = ref(false)
+let rippleTimer: number | null = null
+
+// ========== Lifecycle ==========
+onReady(() => {
+	// Staggered entrance: single isReady drives all CSS transition-delay groups
+	setTimeout(() => { isReady.value = true }, 50)
+
+	// Blob float: toggle phase every 5s
+	blobTimer = setInterval(() => { blobPhase.value = !blobPhase.value }, 5000)
+
+	// Breathing glow: toggle opacity every 2s
+	breathTimer = setInterval(() => { isBreathing.value = !isBreathing.value }, 2000)
+
+	// Camera ripple: expand → instant reset → expand loop
+	ripplePhase.value = true
+	rippleTimer = setInterval(() => {
+		ripplePhase.value = false
+		setTimeout(() => { ripplePhase.value = true }, 50)
+	}, 2200)
+})
+
+onUnload(() => {
+  if (blobTimer != null) clearInterval(blobTimer)
+  if (breathTimer != null) clearInterval(breathTimer)
+  if (rippleTimer != null) clearInterval(rippleTimer)
+})
+
+// ========== Event Handlers ==========
+const handleMenu = () => {
+	// TODO: Open side menu
 }
 
-const todayDate = '2026年5月12日 周二'
+const handleVoice = () => {
+	// TODO: Start voice input
+}
 
-const mealTasks: MealTask[] = [
-	{
-		id: '1',
-		period: 'breakfast',
-		periodEmoji: '🌅',
-		timeLabel: '07:00-09:00',
-		title: '元气早餐',
-		dishes: '牛油果鸡蛋吐司 · 燕麦拿铁 · 蓝莓一小碗',
-		calories: 420,
-		status: 'completed',
-		aiTip: '优质脂肪+蛋白，助力上午专注力',
-	},
-	{
-		id: '2',
-		period: 'lunch',
-		periodEmoji: '☀️',
-		timeLabel: '11:30-13:00',
-		title: '均衡午餐',
-		dishes: '香煎三文鱼 · 藜麦沙拉 · 蒸西兰花 · 杂粮饭',
-		calories: 580,
-		status: 'pending',
-		aiTip: 'Omega-3 对大脑友好，记得细嚼慢咽',
-	},
-	{
-		id: '3',
-		period: 'dinner',
-		periodEmoji: '🌙',
-		timeLabel: '17:30-19:00',
-		title: '轻食晚餐',
-		dishes: '菌菇豆腐汤 · 清炒时蔬 · 红薯半个',
-		calories: 350,
-		status: 'pending',
-		aiTip: '低负担晚餐，有助于睡眠质量',
-	},
-]
+const handleGenerate = () => {
+	// TODO: Generate AI meal plan
+}
 
-// ========== COMPUTED ==========
-
-const allCompleted = computed(() =>
-	mealTasks.every((m) => m.status === 'completed'),
-)
-
-const totalCalories = computed(() =>
-	mealTasks.reduce((sum, m) => sum + m.calories, 0),
-)
+const handleCamera = () => {
+	// TODO: Open camera for food recognition
+}
 </script>
 
 <style scoped>
-/* ===== Page Base ===== */
+/* ===== Page ===== */
 .page {
 	flex: 1;
 	flex-direction: column;
-	background-color: #f8fafc;
-	padding: 16px 18px 0 18px;
+	background: linear-gradient(135deg, #e6f6ee, #f7fdfa, #d5efe1);
 	position: relative;
 }
 
-/* ===== AI Input Bar ===== */
-.ai-bar {
-	flex-direction: row;
-	align-items: center;
-	background-color: rgba(255, 255, 255, 0.85);
-	border-radius: 24px;
-	padding: 14px 18px;
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-	border: 1px solid rgba(16, 185, 129, 0.10);
-	margin-bottom: 20px;
+/* ===== Entrance Animation (single isReady ref + CSS transition-delay) ===== */
+.entrance-item {
+	opacity: 0;
+	transform: translateY(50px);
+	transition-property: opacity, transform;
+	transition-duration: 0.55s;
+	transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-.ai-bar__emoji {
-	font-size: 24px;
-	margin-right: 12px;
+.entrance-item--1 {
+	transition-delay: 0s;
 }
-.ai-bar__placeholder {
-	flex: 1;
-	font-size: 14px;
-	color: #94a3b8;
-	line-height: 1.4;
+.entrance-item--2 {
+	transition-delay: 0.12s;
 }
-.ai-bar__voice {
-	width: 38px;
-	height: 38px;
-	border-radius: 19px;
-	background-color: rgba(16, 185, 129, 0.12);
-	align-items: center;
-	justify-content: center;
-	margin-left: 10px;
+.entrance-item--3 {
+	transition-delay: 0.24s;
 }
-.ai-bar__voice-emoji {
-	font-size: 18px;
+.entrance-item--4 {
+	transition-delay: 0.36s;
+}
+.page--ready .entrance-item {
+	opacity: 1;
+	transform: translateY(0);
 }
 
-/* ===== Section Header ===== */
-.section-header {
-	flex-direction: row;
-	align-items: flex-end;
-	justify-content: space-between;
-	margin-bottom: 12px;
-	padding: 0 4px;
-}
-.section-header__title {
-	font-size: 17px;
-	font-weight: 700;
-	color: #1e293b;
-}
-.section-header__date {
-	font-size: 12px;
-	color: #94a3b8;
-	font-weight: 500;
-}
-
-/* ===== Task Scroll Area ===== */
-.task-scroll {
-	flex: 1;
-	flex-direction: column;
-}
-.task-scroll__spacer {
-	height: 130px;
-}
-
-/* ===== Summary Card (all completed) ===== */
-.summary-card {
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	background-color: rgba(16, 185, 129, 0.08);
-	border-radius: 20px;
-	padding: 28px 20px;
-	margin-bottom: 14px;
-	border: 1px dashed rgba(16, 185, 129, 0.25);
-}
-.summary-card__emoji {
-	font-size: 40px;
-	margin-bottom: 10px;
-}
-.summary-card__title {
-	font-size: 17px;
-	font-weight: 700;
-	color: #1e293b;
-	margin-bottom: 6px;
-}
-.summary-card__sub {
-	font-size: 13px;
-	color: #64748b;
-}
-
-/* ===== Floating Camera FAB ===== */
-.fab-wrapper {
+/* ===== Background Blobs ===== */
+.bg-blobs {
 	position: absolute;
-	bottom: 20px;
+	top: 0;
 	left: 0;
 	right: 0;
+	bottom: 0;
+	z-index: 0;
+	overflow: hidden;
+}
+.blob {
+	position: absolute;
+	border-radius: 50%;
+	opacity: 0.6;
+	transition-property: transform;
+	transition-duration: 5s;
+	transition-timing-function: ease-in-out;
+}
+.blob-1 {
+	width: 250px;
+	height: 250px;
+	top: -10%;
+	left: -20%;
+	transform: translate(0, 0) scale(1);
+}
+.blob-1--shift {
+	transform: translate(40px, 60px) scale(1.1);
+}
+.blob-2 {
+	width: 300px;
+	height: 300px;
+	bottom: 10%;
+	right: -30%;
+	transform: translate(0, 0) scale(1);
+}
+.blob-2--shift {
+	transform: translate(-30px, -40px) scale(1.08);
+}
+
+/* ===== Header ===== */
+.header {
+	z-index: 10;
+	padding: 0 24px 10px 24px;
+	flex-direction: row;
+	align-items: center;
+}
+.menu-btn {
+	width: 44px;
+	height: 44px;
+	border-radius: 14px;
+	background-color: rgba(255, 255, 255, 0.4);
+	border: 1px solid rgba(255, 255, 255, 0.5);
 	align-items: center;
 	justify-content: center;
-	flex-direction: column;
+	box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
-.fab-ring {
+.menu-btn__icon {
+	width: 24px;
+	height: 24px;
+}
+
+/* ===== Main Content ===== */
+.main-content {
+	flex: 1;
+	flex-direction: column;
+	z-index: 10;
+	padding: 0 24px;
+	margin-top: 30px;
+}
+
+/* ===== Dialogue Section ===== */
+.dialogue-section {
+	width: 100%;
+	margin-bottom: auto;
+}
+
+/* ===== AI Greeting ===== */
+.ai-greeting {
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 15px;
+}
+.ai-avatar {
+	width: 32px;
+	height: 32px;
+	border-radius: 16px;
+	background-color: #6eb996;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 4px 10px rgba(110, 185, 150, 0.4);
+}
+.ai-avatar__icon {
+	width: 18px;
+	height: 18px;
+}
+.ai-greeting__text {
+	font-size: 16px;
+	font-weight: 600;
+	color: #2d3436;
+	margin-left: 10px;
+}
+
+/* ===== Input Card Wrapper (breathing glow via opacity on sibling layer) ===== */
+.input-card-wrapper {
+	position: relative;
+}
+.input-glow-bg {
 	position: absolute;
-	width: 84px;
-	height: 84px;
-	border-radius: 42px;
-	border: 2px solid rgba(16, 185, 129, 0.25);
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	border-radius: 24px;
+	box-shadow: 0 12px 30px rgba(110, 185, 150, 0.3);
+	opacity: 0;
+	transition-property: opacity;
+	transition-duration: 2s;
+	transition-timing-function: ease-in-out;
+}
+.input-glow-bg--active {
+	opacity: 1;
+}
+.input-card {
+	position: relative;
+	z-index: 1;
+	background-color: rgba(255, 255, 255, 0.75);
+	border: 2px solid rgba(255, 255, 255, 0.8);
+	border-radius: 24px;
+	padding: 20px;
+	box-shadow: 0 8px 20px rgba(110, 185, 150, 0.15);
+}
+.input-card__textarea {
+	width: 100%;
+	background-color: transparent;
+	font-size: 18px;
+	color: #2d3436;
+	line-height: 1.5;
+}
+
+/* ===== Input Actions ===== */
+.input-actions {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	margin-top: 15px;
+	border-top: 1px solid rgba(0, 0, 0, 0.05);
+	padding-top: 15px;
+}
+.voice-btn {
+	flex-direction: row;
+	align-items: center;
 	background-color: transparent;
 }
-.fab-button {
-	width: 76px;
-	height: 76px;
-	border-radius: 38px;
-	background-color: #10b981;
+.voice-btn__icon {
+	width: 22px;
+	height: 22px;
+}
+.voice-btn__text {
+	font-size: 15px;
+	font-weight: 600;
+	color: #6eb996;
+	margin-left: 5px;
+}
+.generate-btn {
+	flex-direction: row;
+	align-items: center;
+	background: linear-gradient(135deg, #6eb996, #58a581);
+	border-radius: 16px;
+	padding: 12px 20px;
+	box-shadow: 0 6px 15px rgba(88, 165, 129, 0.3);
+	transition-property: transform;
+	transition-duration: 0.2s;
+	transition-timing-function: ease-out;
+}
+.generate-btn:active {
+	transform: scale(0.95);
+}
+.generate-btn__text {
+	font-size: 15px;
+	font-weight: bold;
+	color: #ffffff;
+}
+.generate-btn__icon {
+	width: 18px;
+	height: 18px;
+	margin-left: 8px;
+}
+
+/* ===== Camera Section ===== */
+.camera-section {
+	flex-direction: row;
+	justify-content: center;
+	margin-bottom: 50px;
+}
+.camera-wrapper {
+	width: 80px;
+	height: 80px;
 	align-items: center;
 	justify-content: center;
-	box-shadow: 0 8px 28px rgba(16, 185, 129, 0.40);
 }
-.fab-button__emoji {
-	font-size: 32px;
+.ripple-circle {
+	position: absolute;
+	width: 80px;
+	height: 80px;
+	border-radius: 40px;
+	border: 2px solid #6eb996;
+	transform: scale(1);
+	opacity: 0.8;
 }
-.fab-label {
-	font-size: 12px;
-	color: #64748b;
-	font-weight: 600;
-	margin-top: 8px;
+.ripple-circle--expand {
+	transition-property: transform, opacity;
+	transition-duration: 2s;
+	transition-timing-function: ease-out;
+	transform: scale(1.4);
+	opacity: 0;
+}
+.camera-btn {
+	width: 80px;
+	height: 80px;
+	border-radius: 40px;
+	background-color: rgba(255, 255, 255, 0.85);
+	border: 4px solid #ffffff;
+	box-shadow: 0 15px 35px rgba(110, 185, 150, 0.25);
+	align-items: center;
+	justify-content: center;
+}
+.camera-btn__icon {
+	width: 36px;
+	height: 36px;
+}
+
+/* ===== Home Indicator ===== */
+.home-indicator {
+	width: 134px;
+	height: 5px;
+	background-color: rgba(0, 0, 0, 0.2);
+	border-radius: 3px;
+	align-self: center;
+	margin-bottom: 12px;
 }
 </style>

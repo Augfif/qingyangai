@@ -1,0 +1,72 @@
+import { LottieAnimationView } from 'Lottie';
+
+export class UxLottie {
+
+	$element : UniNativeViewElement
+	lottieView : LottieAnimationView | null = null
+	
+	constructor(element : UniNativeViewElement) {
+		this.$element = element
+		super.init()
+		
+		lottieView = new LottieAnimationView()
+		this.$element.bindIOSView(this.lottieView!)
+	}
+	
+	initData(src: string, callback: () => void) {
+		if(src == '') {
+			return
+		}
+		
+		let path = UTSiOS.getResourcePath(src)
+		lottieView!.animation = LottieAnimation.filepath(path)
+		
+		callback()
+	}
+	
+	play() {
+		lottieView?.play()
+	}
+	
+	stop() {
+		lottieView?.stop()
+	}
+	
+	pause() {
+		lottieView?.pause()
+	}
+	
+	resume() {
+		lottieView?.play()
+	}
+	
+	destroy() {
+		lottieView?.stop()
+		lottieView = null
+		UTSiOS.destroyInstance(this)
+	}
+	
+	setDirection(speed: number) {
+		if(lottieView == null) {
+			return
+		}
+		
+		lottieView!.animationSpeed = CGFloat(speed)
+	}
+	
+	setRepeatCount(count: number) {
+		if(lottieView == null) {
+			return
+		}
+		
+		lottieView!.loopMode = LottieLoopMode.repeat(count.toFloat())
+	}
+	
+	loop(loop: boolean) {
+		if(lottieView == null) {
+			return
+		}
+		
+		lottieView!.loopMode = LottieLoopMode.loop
+	}
+}

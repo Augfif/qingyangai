@@ -1,0 +1,67 @@
+
+
+class LottieIns{
+	constructor(val){
+		this.option=val;
+		this.animation-null;
+	}
+	
+	play(){
+		this.animation.play();
+	};
+	
+	pause(){
+		this.animation.pause();
+	}
+	
+	setSeed(val:number){
+		this.animation.setSpeed(val);
+	}
+	
+	reset(){
+		this.animation.setSpeed(1);
+	}
+	destroy(){
+		this.animation.destroy();
+	}
+	
+	init(){
+		const  setScript = document.createElement("script");
+		const head=document.head || document.getElementsByTagName('head')[0];
+		setScript.src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js";
+		setScript.type="text/javascript";
+		head.appendChild(setScript);
+		
+		setScript.onload=()=>{
+		   this.animation = window.lottie.loadAnimation({
+			 container: document.getElementById('lottie'),
+			 path: this.option.path,
+			 renderer: this.option.renderer||'svg',
+			 loop: this.option.loop||false,
+			 autoplay: this.option.autoplay||false,
+		   })
+		   this.animation.addEventListener('complete',()=>{
+			   // console.log('播放完成')
+			   this.animation.stop();
+		   })
+		   
+		   this.animation.addEventListener('data_ready',()=>{
+			   // console.log('动画加载完成')
+			   this.option?.loaded&&this.option?.loaded();
+			   if(this.option.autoPlay){
+				   this.animation.play();
+			   }
+		   })
+		}
+		setScript.onerror=(err)=>{
+			 console.log('插件加载失败==')
+		}
+	}
+	
+}
+
+export function loadLottieHandle(option){
+	   const resIns=new LottieIns(option);
+	   resIns.init();
+	   return resIns;
+}

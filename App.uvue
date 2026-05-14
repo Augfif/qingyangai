@@ -4,11 +4,6 @@
   // #endif
 	export default {
 		onLaunch: function () {
-			const hasLaunched = uni.getStorageSync('hasLaunched')
-			if (hasLaunched === '' || hasLaunched === null) {
-				uni.reLaunch({ url: '/pages/welcome/welcome' })
-				return
-			}
 			console.log('App Launch')
 		},
 		onShow: function () {

@@ -2,15 +2,15 @@
 	<view class="page">
 		<view class="status-spacer" />
 
-		<view class="item" :class="{ 'item--show': visible[0] }">
+		<view class="item item-1" :class="{ 'item--show': isReady }">
 			<text class="brand-name">轻养AI</text>
 		</view>
 
-		<view class="item" :class="{ 'item--show': visible[1] }">
+		<view class="item item-2" :class="{ 'item--show': isReady }">
 			<image class="hero-image" src="/static/salad-bowl.svg" mode="aspectFit" />
 		</view>
 
-		<view class="item" :class="{ 'item--show': visible[2] }">
+		<view class="item item-3" :class="{ 'item--show': isReady }">
 			<text class="main-title">AI 一键规划三餐</text>
 			<text class="subtitle">智能定制，轻卡美味</text>
 			<view class="feature-row">
@@ -21,7 +21,9 @@
 			</view>
 		</view>
 
-		<view class="item button-area" :class="{ 'item--show': visible[3] }">
+		<view class="flex-spacer" />
+
+		<view class="item button-area item-4" :class="{ 'item--show': isReady }">
 			<view class="btn btn--primary" @tap="handleEnter">
 				<text class="btn__text btn__text--primary">立即开始</text>
 			</view>
@@ -34,22 +36,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
+import { onReady, onLoad } from '@dcloudio/uni-app'
 
-// Each group controlled independently — browser only handles ONE transition at a time
-const visible = ref<boolean[]>([false, false, false, false])
+const isReady = ref<boolean>(false)
+let hasAnimated = false
 
-const DURATION = 550  // ms per animation
-const GAP = 120       // ms pause between groups
+onLoad((_) => {
+	const hasLaunched = uni.getStorageSync('hasLaunched')
+	if (hasLaunched === 'true') {
+		uni.redirectTo({ url: '/pages/index/index' })
+	}
+})
 
-onMounted(() => {
-	const start = 80
-	const step = DURATION + GAP
-
-	setTimeout(() => { visible.value[0] = true }, start)
-	setTimeout(() => { visible.value[1] = true }, start + step)
-	setTimeout(() => { visible.value[2] = true }, start + step * 2)
-	setTimeout(() => { visible.value[3] = true }, start + step * 3)
+onReady(() => {
+	if (hasAnimated) return
+	setTimeout(() => {
+		isReady.value = true
+		hasAnimated = true
+	}, 80)
 })
 
 const handleEnter = () => {
@@ -71,19 +76,28 @@ const handleEnter = () => {
 	height: 60px;
 }
 
+/* ===== Flex Spacer (replaces margin-top: auto) ===== */
+.flex-spacer {
+	flex: 1;
+}
+
 /* ===== Animation Item ===== */
 .item {
 	flex-direction: column;
 	align-items: center;
 	opacity: 0;
-	transform: translate3d(0, 50px, 0);
-	will-change: transform, opacity;
-	transition: opacity 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-	            transform 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+	transform: translateY(50px);
+	transition-property: all;
+	transition-duration: 0.55s;
+	transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
+.item-1 { transition-delay: 0s; }
+.item-2 { transition-delay: 0.12s; }
+.item-3 { transition-delay: 0.24s; }
+.item-4 { transition-delay: 0.36s; }
 .item--show {
 	opacity: 1;
-	transform: translate3d(0, 0, 0);
+	transform: translateY(0);
 }
 
 /* ===== Brand Name ===== */
@@ -141,7 +155,6 @@ const handleEnter = () => {
 /* ===== Button Area ===== */
 .button-area {
 	width: 100%;
-	margin-top: auto;
 	margin-bottom: 40px;
 }
 .btn {

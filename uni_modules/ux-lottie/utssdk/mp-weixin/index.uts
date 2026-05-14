@@ -1,0 +1,46 @@
+export class UxLottie {
+	
+	id: string
+	
+	constructor(id: string) {
+		this.id = id
+	}
+	
+	initData(src: string, callback: () => void) {
+		this.destroy()
+		
+		callback()
+	}
+	
+	play() {
+		
+	}
+	
+	stop() {
+		
+	}
+	
+	pause() {
+		
+	}
+	
+	resume() {
+		
+	}
+	
+	destroy() {
+		
+	}
+	
+	setDirection(direction: number) {
+		
+	}
+	
+	setRepeatCount(count: number) {
+		
+	}
+	
+	loop(loop: boolean) {
+		
+	}
+}

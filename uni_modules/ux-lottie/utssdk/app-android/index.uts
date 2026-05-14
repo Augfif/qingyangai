@@ -1,0 +1,70 @@
+import File from 'java.io.File';
+import FileInputStream from 'java.io.FileInputStream';
+import LottieAnimationView from 'com.airbnb.lottie.LottieAnimationView';
+
+export class UxLottie {
+
+	$element : UniNativeViewElement; 
+	lottieView : LottieAnimationView | null = null
+	
+	constructor(element : UniNativeViewElement) {
+		this.$element = element
+		this.lottieView = new LottieAnimationView(this.$element.getAndroidActivity()!)
+		this.$element.bindAndroidView(this.lottieView!);
+	}
+	
+	initData(src: string, callback: () => void) {
+		if(src == '') {
+			return
+		}
+		
+		if(src.startsWith("http://") || src.startsWith("https://")) {
+			this.lottieView?.setAnimationFromUrl(src)
+		} else {
+			// uni-app x 正式打包会放在asset中，需要特殊处理
+			let path = UTSAndroid.getResourcePath(src)
+				console.log(path)
+			if(path.startsWith("/android_asset")){
+				this.lottieView?.setAnimation(path.substring(15))
+			} else {
+				this.lottieView?.setAnimation(new FileInputStream(path), new Date().getTime().toString())
+			}
+		}
+		
+		callback()
+	}
+	
+	play() {
+		this.lottieView?.playAnimation()
+	}
+	
+	stop() {
+		this.lottieView?.cancelAnimation()
+	}
+	
+	pause() {
+		this.lottieView?.pauseAnimation()
+	}
+	
+	resume() {
+		this.lottieView?.resumeAnimation()
+	}
+	
+	destroy() {
+		this.lottieView?.cancelAnimation()
+		// this.lottieView = null
+	}
+	
+	setDirection(speed: number) {
+		this.lottieView?.setSpeed(speed.toFloat())
+	}
+	
+	setRepeatCount(count: number) {
+		this.lottieView?.setRepeatCount(count.toInt())
+	}
+	
+	loop(loop: boolean) {
+		this.lottieView?.setRepeatCount(-1)
+		// this.lottieView?.loop(loop)
+	}
+}
