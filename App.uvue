@@ -2,9 +2,18 @@
   // #ifdef APP-ANDROID || APP-HARMONY
 	let firstBackTime = 0
   // #endif
+
+	function initAuth() {
+		const token = uni.getStorageSync('token')
+		if (token !== '' && token !== null) {
+			console.log('Auth token found')
+		}
+	}
+
 	export default {
 		onLaunch: function () {
 			console.log('App Launch')
+			initAuth()
 		},
 		onShow: function () {
 			console.log('App Show')

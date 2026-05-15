@@ -27,7 +27,7 @@
 			<view class="btn btn--primary" @tap="handleEnter">
 				<text class="btn__text btn__text--primary">立即开始</text>
 			</view>
-			<view class="btn btn--secondary" @tap="handleEnter">
+			<view class="btn btn--secondary" @tap="goToLogin">
 				<text class="btn__text btn__text--secondary">登录 / 注册</text>
 			</view>
 			<view class="home-indicator" />
@@ -43,10 +43,10 @@ const isReady = ref<boolean>(false)
 let hasAnimated = false
 
 onLoad((_) => {
-	const hasLaunched = uni.getStorageSync('hasLaunched')
-	if (hasLaunched === 'true') {
-		uni.redirectTo({ url: '/pages/index/index' })
-	}
+	// const hasLaunched = uni.getStorageSync('hasLaunched')
+	// if (hasLaunched === 'true') {
+	// 	uni.redirectTo({ url: '/pages/index/index' })
+	// }
 })
 
 onReady(() => {
@@ -60,6 +60,10 @@ onReady(() => {
 const handleEnter = () => {
 	uni.setStorageSync('hasLaunched', 'true')
 	uni.reLaunch({ url: '/pages/index/index' })
+}
+
+const goToLogin = () => {
+	uni.navigateTo({ url: '/pages/login/login' })
 }
 </script>
 

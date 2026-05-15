@@ -1,35 +1,49 @@
 <template>
 	<scroll-view class="page" scroll-y="true" show-scrollbar="false">
 		<!-- ===== User Header Card ===== -->
-		<view class="user-card">
-			<view class="user-card__top">
-				<view class="user-card__avatar">
-					<text class="user-card__avatar-emoji">{{ user.avatar }}</text>
-				</view>
-				<view class="user-card__info">
-					<text class="user-card__name">{{ user.name }}</text>
-					<view class="user-card__level">
-						<text class="user-card__level-emoji">{{ user.levelEmoji }}</text>
-						<text class="user-card__level-text">{{ user.level }}</text>
+				<view class="user-card">
+				<!-- Logged in -->
+				<view class="user-card__top" v-if="isLoggedIn">
+					<view class="user-card__avatar">
+						<text class="user-card__avatar-emoji">{{ user.avatar }}</text>
+					</view>
+					<view class="user-card__info">
+						<text class="user-card__name">{{ displayName }}</text>
+						<view class="user-card__level">
+							<text class="user-card__level-emoji">{{ user.levelEmoji }}</text>
+							<text class="user-card__level-text">{{ user.level }}</text>
+						</view>
+					</view>
+					<view class="user-card__edit" @tap="handleLogout">
+						<text class="user-card__edit-text">退出</text>
 					</view>
 				</view>
-				<view class="user-card__edit">
-					<text class="user-card__edit-text">✏️</text>
+				<!-- Not logged in -->
+				<view class="user-card__top" v-else>
+					<view class="user-card__avatar">
+						<text class="user-card__avatar-emoji">👤</text>
+					</view>
+					<view class="user-card__info">
+						<text class="user-card__name">未登录</text>
+						<text class="user-card__level-text">登录后享受完整功能</text>
+					</view>
+					<view class="user-card__edit" @tap="handleGoLogin">
+						<text class="user-card__edit-text">登录</text>
+					</view>
+				</view>
+								<!-- Stats row -->
+				<view class="user-card__stats">
+					<view
+						v-for="stat in userStats"
+						:key="stat.label"
+						class="user-card__stat"
+					>
+						<text class="user-card__stat-value">{{ stat.value }}</text>
+						<text class="user-card__stat-label">{{ stat.label }}</text>
+					</view>
 				</view>
 			</view>
-			<!-- Stats row -->
-			<view class="user-card__stats">
-				<view
-					v-for="stat in userStats"
-					:key="stat.label"
-					class="user-card__stat"
-				>
-					<text class="user-card__stat-value">{{ stat.value }}</text>
-					<text class="user-card__stat-label">{{ stat.label }}</text>
-				</view>
-			</view>
-		</view>
-
+	
 		<!-- ===== Health Report Card ===== -->
 		<view class="report-card">
 			<view class="report-card__header">
@@ -150,6 +164,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { username, isLoggedIn, logout, initAuth } from '@/stores/user'
+
 // ========== TYPE DEFINITIONS ==========
 
 type UserStat = {
@@ -245,6 +262,28 @@ const settings: SettingItem[] = [
 	{ emoji: '❓', title: '帮助与反馈' },
 	{ emoji: 'ℹ️', title: '关于我们' },
 ]
+// ========== AUTH STATE ==========
+initAuth()
+
+const displayName = computed((): string => {
+	if (isLoggedIn.value && username.value !== "") {
+		return username.value
+	}
+	return '未登录'
+})
+
+function handleLogout() {
+	logout()
+	uni.showToast({ title: '已退出登录', icon: 'none' })
+	setTimeout(function () {
+		uni.reLaunch({ url: '/pages/welcome/welcome' })
+	}, 500)
+}
+
+function handleGoLogin() {
+	uni.navigateTo({ url: '/pages/login/login' })
+}
+
 </script>
 
 <style scoped>
