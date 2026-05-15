@@ -130,6 +130,8 @@
 		<view class="drawer-mask" :class="{ 'drawer-mask--show': showDrawer }" @tap="showDrawer = false" />
 		<view class="drawer-panel" :class="{ 'drawer-panel--show': showDrawer }" :style="{ paddingTop: headerPadding + 20 + 'px' }">
 			<view class="drawer-header">
+				<!-- 沙拉碗 Logo（复用 welcome 页图标），与设计系统一致 -->
+				<image class="drawer-header__icon" src="/static/salad-bowl.svg" mode="aspectFit" />
 				<text class="drawer-header__title">轻养AI</text>
 			</view>
 			<view class="drawer-menu">
@@ -139,6 +141,13 @@
 				<view class="drawer-item" :class="{ 'drawer-item--current': currentIndex === 1 }" @tap="goTasks">
 					<text class="drawer-item__text" :class="{ 'drawer-item__text--current': currentIndex === 1 }">三餐任务卡</text>
 				</view>
+			</view>
+			<!-- 弹性撑开，将个人中心推到 drawer 底部 -->
+			<view class="drawer-spacer" />
+			<!-- 个人中心入口（替代原底部 tabBar"我的"） -->
+			<view class="drawer-profile" @tap="goProfile">
+				<image class="drawer-profile__icon" src="/static/icons/user.svg" mode="aspectFit" />
+				<text class="drawer-profile__text">个人中心</text>
 			</view>
 		</view>
 	</view>
@@ -159,6 +168,7 @@ type MealPlan = { date: string; goal: string; meals: Meal[] }
 
 // ========== View State (Swiper) ==========
 const currentIndex = ref(0)
+// UniSwiperChangeEvent 是 uni-app x 原生框架提供的类型，运行时对应 Java 类
 const onSwiperChange = (e: UniSwiperChangeEvent) => {
 	currentIndex.value = e.detail.current
 }
@@ -246,6 +256,11 @@ const goTasks = () => {
 const goHome = () => {
 	showDrawer.value = false
 	currentIndex.value = 0
+}
+// 从抽屉底部跳转到个人中心页
+const goProfile = () => {
+	showDrawer.value = false
+	uni.navigateTo({ url: "/pages/profile/profile" })
 }
 
 const handleVoice = () => { /* TODO */ }
@@ -383,7 +398,8 @@ const handleCheckIn = () => { uni.showToast({ title: '打卡成功！', icon: 'n
 	margin-bottom: 16px; 
 	border: 1px solid rgba(255, 255, 255, 0.45); 
 	box-shadow: 0 8px 32px rgba(110, 185, 150, 0.08); 
-	position: relative; 
+	position: relative;
+	padding-top: 18px; /* 内边距避开顶部 border-radius 裁切区域 */
 }
 .meal-card__header { 
 	flex-direction: row; 
@@ -443,12 +459,19 @@ const handleCheckIn = () => { uni.showToast({ title: '打卡成功！', icon: 'n
 /* ===== Drawer ===== */
 .drawer-mask { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); z-index: 100; opacity: 0; transition-property: opacity; transition-duration: 0.3s; transition-timing-function: ease-out; pointer-events: none; }
 .drawer-mask--show { opacity: 1; pointer-events: auto; }
-.drawer-panel { position: absolute; top: 0; left: 0; bottom: 0; width: 70%; background: linear-gradient(180deg, #ffffff 0%, #f7fdfa 100%); z-index: 101; transform: translateX(-100%); transition-property: transform; transition-duration: 0.3s; transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94); padding-left: 28px; padding-right: 28px; }
+.drawer-panel { position: absolute; top: 0; left: 0; bottom: 0; width: 70%; background: linear-gradient(180deg, #ffffff 0%, #f7fdfa 100%); z-index: 101; flex-direction: column; transform: translateX(-100%); transition-property: transform; transition-duration: 0.3s; transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94); padding-left: 28px; padding-right: 28px; }
 .drawer-panel--show { transform: translateX(0); }
-.drawer-header__title { font-size: 28px; font-weight: bold; color: #10b981; margin-bottom: 40px; }
+.drawer-header__title { font-size: 28px; font-weight: bold; color: #10b981; margin-bottom: 28px; }
+.drawer-header__icon { width: 60px; height: 60px; margin-bottom: 16px; }
 .drawer-menu { flex-direction: column; }
 .drawer-item { padding: 16px 20px; border-radius: 14px; margin-bottom: 6px; background-color: transparent; transition-property: background-color; transition-duration: 0.2s; }
 .drawer-item--current { background-color: rgba(16, 185, 129, 0.10); }
 .drawer-item__text { font-size: 17px; font-weight: 600; color: #1e293b; }
 .drawer-item__text--current { color: #10b981; }
+/* 弹性 spacer：将个人中心入口推到 drawer 底部 */
+.drawer-spacer { flex: 1; }
+/* 个人中心入口行 */
+.drawer-profile { flex-direction: row; align-items: center; padding: 16px 20px; border-top: 1px solid rgba(110, 185, 150, 0.12); margin-top: 12px; }
+.drawer-profile__icon { width: 22px; height: 22px; margin-right: 12px; }
+.drawer-profile__text { font-size: 16px; font-weight: 600; color: #1e293b; }
 </style>

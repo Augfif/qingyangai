@@ -38,7 +38,7 @@
 		{
 			"path": "pages/profile/profile",
 			"style": {
-				"navigationBarTitleText": "我的",
+				"navigationBarTitleText": "个人中心",
 				"navigationBarBackgroundColor": "#f8fafc"
 			}
 		}
@@ -66,10 +66,6 @@
 			{
 				"pagePath": "pages/around/around",
 				"text": "🛒 周边"
-			},
-			{
-				"pagePath": "pages/profile/profile",
-				"text": "👤 我的"
 			}
 		]
 	},
