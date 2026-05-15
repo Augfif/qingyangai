@@ -16,61 +16,126 @@
 			/>
 		</view>
 
-		<!-- Header -->
+		<!-- Header (persistent across both slides) -->
 		<view class="header entrance-item entrance-item--1" :style="{ paddingTop: headerPadding + 'px' }" :class="{ 'entrance-item--show': isReady }">
 			<view class="menu-btn" @tap="handleMenu">
 				<image class="menu-btn__icon" src="/static/icons/list.png" mode="aspectFit" />
 			</view>
 		</view>
 
-		<!-- Main Content (Scrollable) -->
-		<scroll-view class="main-content" :scroll-y="true">
-			<!-- Dialogue Section -->
-			<view class="dialogue-section entrance-item entrance-item--2" :class="{ 'entrance-item--show': isReady }">
-				<!-- AI Greeting -->
-				<view class="ai-greeting">
-					<view class="ai-avatar">
-						<image class="ai-avatar__icon" src="/static/icons/sparkle.png" mode="aspectFit" />
-					</view>
-					<text class="ai-greeting__text">Hi，今天想怎么吃？</text>
-				</view>
-
-				<!-- Input Card with Breathing Glow -->
-				<view class="input-card-wrapper">
-					<view class="input-card" :class="{ 'input-card--breathing': isBreathing }">
-						<textarea
-							class="input-card__textarea"
-							placeholder="例如：我想调理肠胃、不想节食，给我安排一天的计划..."
-							placeholder-style="color:#a0aec0;font-size:18px;line-height:1.5;"
-							:auto-height="true"
-						/>
-						<view class="input-actions">
-							<view class="voice-btn" @tap="handleVoice">
-								<image class="voice-btn__icon" src="/static/icons/microphone.png" mode="aspectFit" />
-								<text class="voice-btn__text">语音输入</text>
+		<!-- Swiper: home / tasks -->
+		<swiper class="main-swiper" :current="currentIndex" :duration="350" @change="onSwiperChange">
+			<!-- Slide 0 — Home -->
+			<swiper-item>
+				<scroll-view class="home-scroll" :scroll-y="true">
+					<!-- Dialogue Section -->
+					<view class="dialogue-section entrance-item entrance-item--2" :class="{ 'entrance-item--show': isReady }">
+						<!-- AI Greeting -->
+						<view class="ai-greeting">
+							<view class="ai-avatar">
+								<image class="ai-avatar__icon" src="/static/icons/sparkle.png" mode="aspectFit" />
 							</view>
-							<view class="generate-btn" @tap="handleGenerate">
-								<text class="generate-btn__text">一键生成</text>
-								<image class="generate-btn__icon" src="/static/icons/paper-plane.png" mode="aspectFit" />
+							<text class="ai-greeting__text">Hi，今天想怎么吃？</text>
+						</view>
+
+						<!-- Input Card with Breathing Glow -->
+						<view class="input-card-wrapper">
+							<view class="input-card" :class="{ 'input-card--breathing': isBreathing }">
+								<textarea
+									class="input-card__textarea"
+									placeholder="例如：我想调理肠胃、不想节食，给我安排一天的计划..."
+									placeholder-style="color:#a0aec0;font-size:18px;line-height:1.5;"
+									:auto-height="true"
+								/>
+								<view class="input-actions">
+									<view class="voice-btn" @tap="handleVoice">
+										<image class="voice-btn__icon" src="/static/icons/microphone.png" mode="aspectFit" />
+										<text class="voice-btn__text">语音输入</text>
+									</view>
+									<view class="generate-btn" @tap="handleGenerate">
+										<text class="generate-btn__text">一键生成</text>
+										<image class="generate-btn__icon" src="/static/icons/paper-plane.png" mode="aspectFit" />
+									</view>
+								</view>
 							</view>
 						</view>
 					</view>
-				</view>
-			</view>
 
-			<!-- Spacer -->
-			<view style="height: 40px;" />
+					<!-- Spacer -->
+					<view style="height: 40px;" />
 
-			<!-- Camera Section -->
-			<view class="camera-section entrance-item entrance-item--3" :class="{ 'entrance-item--show': isReady }">
-				<view class="camera-wrapper">
-					<view class="ripple-circle" :class="{ 'ripple-circle--expand': ripplePhase }" />
-					<view class="camera-btn" @tap="handleCamera">
-						<image class="camera-btn__icon" src="/static/icons/camera.png" mode="aspectFit" />
+					<!-- Camera Section -->
+					<view class="camera-section entrance-item entrance-item--3" :class="{ 'entrance-item--show': isReady }">
+						<view class="camera-wrapper">
+							<view class="ripple-circle" :class="{ 'ripple-circle--expand': ripplePhase }" />
+							<view class="camera-btn" @tap="handleCamera">
+								<image class="camera-btn__icon" src="/static/icons/camera.png" mode="aspectFit" />
+							</view>
+						</view>
+					</view>
+				</scroll-view>
+			</swiper-item>
+
+			<!-- Slide 1 — Tasks (三餐任务卡) -->
+			<swiper-item>
+				<view class="tasks-view">
+					<!-- Tasks Header -->
+					<view class="tasks-header">
+						<view class="tasks-header__top">
+							<text class="tasks-header__date">{{ mealPlan.date }}</text>
+							<view class="tasks-header__remind" @tap="handleRemind">
+								<text class="tasks-header__remind-text">设置提醒</text>
+							</view>
+						</view>
+						<text class="tasks-header__goal">今日目标：{{ mealPlan.goal }}</text>
+					</view>
+
+					<!-- Meal Cards -->
+					<scroll-view class="tasks-scroll" scroll-y="true">
+						<view
+							v-for="meal in mealPlan.meals"
+							:key="meal.title"
+							class="meal-card"
+						>
+							<view class="meal-card__header">
+								<text class="meal-card__title">{{ meal.title }}</text>
+								<text class="meal-card__time">{{ meal.time }}</text>
+							</view>
+
+							<view class="meal-card__items">
+								<view
+									v-for="item in meal.items"
+									:key="item.name"
+									class="meal-card__item"
+									@tap="toggleItem(meal, item)"
+								>
+									<view class="meal-card__checkbox" :class="{ 'meal-card__checkbox--checked': item.done }">
+										<text class="meal-card__checkmark">{{ item.done ? '✓' : '' }}</text>
+									</view>
+									<text class="meal-card__item-name" :class="{ 'meal-card__item-name--done': item.done }">{{ item.name }}</text>
+								</view>
+							</view>
+
+							<view class="meal-card__extra">
+								<text class="meal-card__extra-text">{{ meal.extra }}</text>
+							</view>
+						</view>
+
+						<view style="height: 100px;" />
+					</scroll-view>
+
+					<!-- Bottom Action Bar -->
+					<view class="bottom-bar">
+						<view class="bottom-bar__btn bottom-bar__btn--secondary" @tap="handlePhoto">
+							<text class="bottom-bar__btn-text bottom-bar__btn-text--secondary">拍照记录</text>
+						</view>
+						<view class="bottom-bar__btn bottom-bar__btn--primary" @tap="handleCheckIn">
+							<text class="bottom-bar__btn-text bottom-bar__btn-text--primary">完成打卡</text>
+						</view>
 					</view>
 				</view>
-			</view>
-		</scroll-view>
+			</swiper-item>
+		</swiper>
 
 		<!-- ===== Drawer ===== -->
 		<view class="drawer-mask" :class="{ 'drawer-mask--show': showDrawer }" @tap="showDrawer = false" />
@@ -79,7 +144,7 @@
 				<text class="drawer-header__title">轻养AI</text>
 			</view>
 			<view class="drawer-menu">
-				<view class="drawer-item" @tap="showDrawer = false">
+				<view class="drawer-item drawer-item--current" @tap="goHome">
 					<text class="drawer-item__text drawer-item__text--current">AI 膳食助理</text>
 				</view>
 				<view class="drawer-item" @tap="goTasks">
@@ -101,8 +166,33 @@ const headerPadding = (sysInfo.statusBarHeight ?? 25) + 10
 // ========== Entrance Animation ==========
 const isReady = ref(false)
 
+// ========== Swiper ==========
+const currentIndex = ref(0)
+type SwiperChangeDetail = {
+	current: number
+	source?: string
+}
+
+type SwiperChangeEvent = {
+	detail: SwiperChangeDetail
+}
+
+const onSwiperChange = (e: SwiperChangeEvent) => {
+	currentIndex.value = e.detail.current
+}
+
 // ========== Drawer ==========
 const showDrawer = ref(false)
+
+const goHome = () => {
+	showDrawer.value = false
+	currentIndex.value = 0
+}
+
+const goTasks = () => {
+	showDrawer.value = false
+	currentIndex.value = 1
+}
 
 // ========== Background Blob Float ==========
 const blobPhase = ref(false)
@@ -139,7 +229,13 @@ onUnload(() => {
 
 // ========== Event Handlers ==========
 const handleMenu = () => {
-	showDrawer.value = true
+	if (currentIndex.value === 1) {
+		// On tasks view → return to home
+		currentIndex.value = 0
+	} else {
+		// On home view → open drawer
+		showDrawer.value = true
+	}
 }
 
 const handleVoice = () => {
@@ -154,9 +250,81 @@ const handleCamera = () => {
 	// TODO: Open camera for food recognition
 }
 
-const goTasks = () => {
-	showDrawer.value = false
-	uni.navigateTo({ url: '/pages/tasks/tasks' })
+// ========== TYPES ==========
+
+type MealItem = {
+	name: string
+	done: boolean
+}
+
+type Meal = {
+	title: string
+	time: string
+	items: MealItem[]
+	extra: string
+}
+
+type MealPlan = {
+	date: string
+	goal: string
+	meals: Meal[]
+}
+
+// ========== MEAL PLAN DATA (mock, ready for AI injection) ==========
+
+const mealPlan = ref<MealPlan>({
+	date: '2026年5月14日',
+	goal: '调理肠胃 · 低脂清淡',
+	meals: [
+		{
+			title: '早餐',
+			time: '07:00 - 08:00',
+			items: [
+				{ name: '小米南瓜粥', done: false },
+				{ name: '水煮蛋 1个', done: false },
+				{ name: '蒸红薯 小份', done: false },
+			],
+			extra: '推荐：可搭配一小碟凉拌黄瓜',
+		},
+		{
+			title: '午餐',
+			time: '12:00 - 12:30',
+			items: [
+				{ name: '清蒸鲈鱼', done: false },
+				{ name: '蒜蓉西兰花', done: false },
+				{ name: '杂粮饭 半碗', done: false },
+			],
+			extra: '约 450 kcal · 高蛋白低脂肪',
+		},
+		{
+			title: '晚餐',
+			time: '18:00 - 18:30',
+			items: [
+				{ name: '番茄豆腐汤', done: false },
+				{ name: '凉拌鸡丝', done: false },
+				{ name: '蒸玉米 半根', done: false },
+			],
+			extra: '小贴士：晚餐不宜过晚，建议睡前3小时完成进食',
+		},
+	],
+})
+
+// ========== TASKS EVENT HANDLERS ==========
+
+const toggleItem = (meal: Meal, item: MealItem) => {
+	item.done = !item.done
+}
+
+const handleRemind = () => {
+	uni.showToast({ title: '提醒已设置', icon: 'none' })
+}
+
+const handlePhoto = () => {
+	uni.showToast({ title: '拍照功能开发中', icon: 'none' })
+}
+
+const handleCheckIn = () => {
+	uni.showToast({ title: '打卡成功！', icon: 'none' })
 }
 </script>
 
@@ -167,6 +335,13 @@ const goTasks = () => {
 	flex-direction: column;
 	background: linear-gradient(135deg, #e6f6ee, #f7fdfa, #d5efe1);
 	position: relative;
+}
+
+/* ===== Swiper ===== */
+.main-swiper {
+	flex: 1;
+	width: 100%;
+	z-index: 1;
 }
 
 /* ===== Entrance Animation ===== */
@@ -247,13 +422,12 @@ const goTasks = () => {
 	height: 24px;
 }
 
-/* ===== Main Content (Scrollable) ===== */
-.main-content {
+/* ===== Home Scroll ===== */
+.home-scroll {
 	flex: 1;
 	width: 100%;
 	box-sizing: border-box;
 	flex-direction: column;
-	z-index: 10;
 	padding: 0 16px;
 	margin-top: 30px;
 }
@@ -411,6 +585,174 @@ const goTasks = () => {
 	width: 36px;
 	height: 36px;
 }
+
+/* ================================ */
+/*  Tasks View                     */
+/* ================================ */
+
+/* ===== Tasks View Container ===== */
+.tasks-view {
+	flex: 1;
+	flex-direction: column;
+	background-color: #f8fafc;
+}
+
+/* ===== Tasks Header ===== */
+.tasks-header {
+	flex-direction: column;
+	padding: 16px 20px 8px 20px;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+	background-color: #ffffff;
+}
+.tasks-header__top {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+.tasks-header__date {
+	font-size: 16px;
+	font-weight: 700;
+	color: #1e293b;
+}
+.tasks-header__remind {
+	padding: 6px 14px;
+	border-radius: 10px;
+	background-color: rgba(16, 185, 129, 0.10);
+}
+.tasks-header__remind-text {
+	font-size: 13px;
+	font-weight: 600;
+	color: #10b981;
+}
+.tasks-header__goal {
+	font-size: 14px;
+	color: #64748b;
+}
+
+/* ===== Tasks Scroll ===== */
+.tasks-scroll {
+	flex: 1;
+	padding: 16px 18px;
+	box-sizing: border-box;
+}
+
+/* ===== Meal Card ===== */
+.meal-card {
+	flex-direction: column;
+	background-color: rgba(255, 255, 255, 0.85);
+	border-radius: 20px;
+	padding: 18px 18px 16px 18px;
+	margin-bottom: 14px;
+	border: 1px solid rgba(16, 185, 129, 0.10);
+}
+.meal-card__header {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 14px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+.meal-card__title {
+	font-size: 18px;
+	font-weight: bold;
+	color: #1e293b;
+}
+.meal-card__time {
+	font-size: 12px;
+	color: #94a3b8;
+	font-weight: 500;
+}
+
+/* ===== Meal Items ===== */
+.meal-card__items {
+	flex-direction: column;
+	margin-bottom: 12px;
+}
+.meal-card__item {
+	flex-direction: row;
+	align-items: center;
+	padding: 8px 0;
+}
+.meal-card__checkbox {
+	width: 22px;
+	height: 22px;
+	border-radius: 11px;
+	border: 2px solid #cbd5e1;
+	align-items: center;
+	justify-content: center;
+	margin-right: 12px;
+	transition-property: background-color, border-color;
+	transition-duration: 0.2s;
+}
+.meal-card__checkbox--checked {
+	background-color: #10b981;
+	border-color: #10b981;
+}
+.meal-card__checkmark {
+	font-size: 13px;
+	color: #ffffff;
+	font-weight: bold;
+}
+.meal-card__item-name {
+	font-size: 16px;
+	font-weight: 500;
+	color: #1e293b;
+	flex: 1;
+	transition-property: color;
+	transition-duration: 0.2s;
+}
+.meal-card__item-name--done {
+	color: #94a3b8;
+}
+
+/* ===== Extra Info ===== */
+.meal-card__extra {
+	background-color: rgba(16, 185, 129, 0.06);
+	border-radius: 12px;
+	padding: 10px 14px;
+}
+.meal-card__extra-text {
+	font-size: 13px;
+	color: #64748b;
+	line-height: 1.5;
+}
+
+/* ===== Bottom Action Bar ===== */
+.bottom-bar {
+	flex-direction: row;
+	padding: 16px 18px;
+	padding-bottom: 32px;
+	border-top: 1px solid rgba(0, 0, 0, 0.04);
+	background-color: #ffffff;
+}
+.bottom-bar__btn {
+	flex: 1;
+	height: 50px;
+	border-radius: 16px;
+	align-items: center;
+	justify-content: center;
+}
+.bottom-bar__btn--primary {
+	background-color: #10b981;
+	margin-left: 12px;
+}
+.bottom-bar__btn--secondary {
+	background-color: transparent;
+	border: 1.5px solid #10b981;
+}
+.bottom-bar__btn-text {
+	font-size: 16px;
+	font-weight: 600;
+}
+.bottom-bar__btn-text--primary {
+	color: #ffffff;
+}
+.bottom-bar__btn-text--secondary {
+	color: #10b981;
+}
+
 /* ===== Drawer ===== */
 .drawer-mask {
 	position: absolute;
