@@ -1,0 +1,274 @@
+<template>
+	<view class="page">
+		<!-- Background blobs -->
+		<image class="blob blob--1" src="/static/blobs/blob-1.png" mode="aspectFit" />
+		<image class="blob blob--2" src="/static/blobs/blob-2.png" mode="aspectFit" />
+
+		<view class="status-spacer" />
+
+		<!-- Form Card -->
+		<view class="form-card" :class="{ 'card--show': isReady }">
+			<text class="form-card__title">{{ isLoginMode ? '欢迎回来' : '创建账号' }}</text>
+			<text class="form-card__subtitle">{{ isLoginMode ? '登录继续你的健康之旅' : '开启你的专属康养计划' }}</text>
+
+			<!-- Username -->
+			<view class="input-group">
+				<text class="input-group__label">账号</text>
+				<view class="input-wrapper">
+					<input
+						class="input-field"
+						type="text"
+						:value="username"
+						@input="username = $event.detail.value"
+						placeholder="请输入用户名"
+						placeholder-class="placeholder"
+					/>
+				</view>
+			</view>
+
+			<!-- Password -->
+			<view class="input-group">
+				<text class="input-group__label">密码</text>
+				<view class="input-wrapper input-wrapper--pwd">
+					<input
+						class="input-field"
+						:type="showPwd ? 'text' : 'password'"
+						:value="password"
+						@input="password = $event.detail.value"
+						placeholder="请输入密码"
+						placeholder-class="placeholder"
+					/>
+					<text class="pwd-toggle" @tap="showPwd = !showPwd">{{ showPwd ? '隐藏' : '显示' }}</text>
+				</view>
+			</view>
+
+			<!-- Submit Button -->
+			<view class="submit-btn" @tap="handleSubmit">
+				<text class="submit-btn__text">{{ isLoading ? '处理中...' : (isLoginMode ? '一键登录' : '立即注册') }}</text>
+			</view>
+
+			<!-- Toggle Register / Login -->
+			<view class="toggle-mode" @tap="toggleMode">
+				<text class="toggle-mode__text">{{ isLoginMode ? '没有账号？去注册' : '已有账号？去登录' }}</text>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import { onReady } from '@dcloudio/uni-app'
+import { mockLogin, mockRegister } from '@/utils/mockApi'
+import { useUserStore } from '@/stores/user'
+
+const isLoginMode = ref(true)
+const username = ref('')
+const password = ref('')
+const showPwd = ref(false)
+const isReady = ref(false)
+const isLoading = ref(false)
+
+const userStore = useUserStore()
+
+function toggleMode() {
+	isLoginMode.value = !isLoginMode.value
+}
+
+async function handleSubmit() {
+	if (username.value === '' || password.value === '') {
+		uni.showToast({ title: '请填写完整信息', icon: 'none' })
+		return
+	}
+	isLoading.value = true
+
+	try {
+		let result: any = null
+		if (isLoginMode.value) {
+			result = await mockLogin(username.value, password.value)
+		} else {
+			result = await mockRegister(username.value, password.value)
+		}
+		const resToken = result['token'] as string
+		const resUser = result['user'] as any
+		const resUsername = resUser['username'] as string
+
+		userStore.login(resUsername, resToken)
+
+		uni.showToast({ title: isLoginMode.value ? '登录成功' : '注册成功', icon: 'success' })
+		setTimeout(function () {
+			uni.reLaunch({ url: '/pages/index/index' })
+		}, 1000)
+	} catch (e: any) {
+		let errorMsg = '操作失败'
+		if (e != null && e['message'] != null) {
+			errorMsg = e['message'] as string
+		}
+		uni.showToast({ title: errorMsg, icon: 'none' })
+	} finally {
+		isLoading.value = false
+	}
+}
+
+onReady(() => {
+	setTimeout(function () {
+		isReady.value = true
+	}, 80)
+})
+</script>
+
+<style scoped>
+/* ===== Page ===== */
+.page {
+	flex: 1;
+	flex-direction: column;
+	align-items: center;
+	background: linear-gradient(135deg, #e6f6ee, #f7fdfa, #d5efe1);
+	padding: 0 28px;
+	position: relative;
+	overflow: hidden;
+}
+.status-spacer {
+	height: 70px;
+}
+
+/* ===== Blob Decorations ===== */
+.blob {
+	position: absolute;
+	pointer-events: none;
+}
+.blob--1 {
+	width: 250px;
+	height: 250px;
+	top: -10%;
+	left: -20%;
+	transition-property: transform;
+	transition-duration: 5s;
+	transition-timing-function: ease-in-out;
+	transform: translate(0, 0) scale(1);
+}
+	transform: translate(40px, 60px) scale(1.1);
+}
+.blob--2 {
+	width: 300px;
+	height: 300px;
+	bottom: 10%;
+	right: -30%;
+	transition-property: transform;
+	transition-duration: 5s;
+	transition-timing-function: ease-in-out;
+	transform: translate(0, 0) scale(1);
+}
+	transform: translate(-30px, -40px) scale(1.08);
+}
+
+/* ===== Form Card ===== */
+.form-card {
+	flex-direction: column;
+	width: 100%;
+	background-color: rgba(255, 255, 255, 0.6);
+	border: 1px solid rgba(255, 255, 255, 0.8);
+	border-radius: 24px;
+	padding: 32px 24px;
+	box-shadow: 0 8px 32px rgba(16, 185, 129, 0.12);
+
+	opacity: 0;
+	transform: translateY(40px);
+	transition-property: opacity, transform;
+	transition-duration: 0.55s;
+	transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+	transition-delay: 0.15s;
+}
+.card--show {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+/* ===== Title ===== */
+.form-card__title {
+	font-size: 28px;
+	font-weight: 700;
+	color: #1e293b;
+	margin-bottom: 6px;
+	text-align: center;
+}
+.form-card__subtitle {
+	font-size: 14px;
+	color: #64748b;
+	margin-bottom: 30px;
+	text-align: center;
+}
+
+/* ===== Input Group ===== */
+.input-group {
+	flex-direction: column;
+	margin-bottom: 18px;
+}
+.input-group__label {
+	font-size: 14px;
+	font-weight: 600;
+	color: #1e293b;
+	margin-bottom: 8px;
+}
+.input-wrapper {
+	flex-direction: row;
+	align-items: center;
+	background-color: rgba(255, 255, 255, 0.7);
+	border: 1px solid rgba(16, 185, 129, 0.15);
+	border-radius: 14px;
+	padding: 0 16px;
+	height: 50px;
+}
+.input-wrapper--pwd {
+	justify-content: space-between;
+}
+.input-field {
+	flex: 1;
+	height: 50px;
+	font-size: 16px;
+	color: #1e293b;
+	background-color: transparent;
+	border: none;
+}
+.placeholder {
+	color: #94a3b8;
+	font-size: 14px;
+}
+
+/* ===== Password Toggle ===== */
+.pwd-toggle {
+	font-size: 13px;
+	color: #10b981;
+	font-weight: 500;
+	padding: 4px 0 4px 12px;
+	flex-shrink: 0;
+}
+
+/* ===== Submit Button ===== */
+.submit-btn {
+	align-items: center;
+	justify-content: center;
+	height: 54px;
+	border-radius: 27px;
+	background: linear-gradient(135deg, #10b981, #0da271);
+	box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+	margin-top: 10px;
+	margin-bottom: 16px;
+}
+.submit-btn__text {
+	font-size: 18px;
+	font-weight: 600;
+	color: #ffffff;
+}
+
+/* ===== Toggle Mode ===== */
+.toggle-mode {
+	align-items: center;
+	justify-content: center;
+	padding: 8px 0;
+}
+.toggle-mode__text {
+	font-size: 14px;
+	color: #10b981;
+	font-weight: 500;
+}
+</style>

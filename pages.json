@@ -1,6 +1,13 @@
 {
 	"pages": [
 		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#f7fdfa"
+			}
+		},
+		{
 			"path": "pages/welcome/welcome",
 			"style": {
 				"navigationStyle": "custom",
