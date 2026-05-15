@@ -24,7 +24,7 @@
 		</view>
 
 		<!-- Swiper: home / tasks -->
-		<swiper class="main-swiper" :current="currentIndex" :duration="350" @change="onSwiperChange">
+		<swiper class="main-swiper" :current="currentIndex" :duration="350">
 			<!-- Slide 0 — Home -->
 			<swiper-item>
 				<scroll-view class="home-scroll" :scroll-y="true">
@@ -144,11 +144,11 @@
 				<text class="drawer-header__title">轻养AI</text>
 			</view>
 			<view class="drawer-menu">
-				<view class="drawer-item drawer-item--current" @tap="goHome">
-					<text class="drawer-item__text drawer-item__text--current">AI 膳食助理</text>
+				<view class="drawer-item" :class="{'drawer-item--current': currentIndex === 0}" @tap="goHome">
+					<text class="drawer-item__text" :class="{'drawer-item__text--current': currentIndex === 0}">AI 膳食助理</text>
 				</view>
-				<view class="drawer-item" @tap="goTasks">
-					<text class="drawer-item__text">三餐任务卡</text>
+				<view class="drawer-item" :class="{'drawer-item--current': currentIndex === 1}" @tap="goTasks">
+					<text class="drawer-item__text" :class="{'drawer-item__text--current': currentIndex === 1}">三餐任务卡</text>
 				</view>
 			</view>
 		</view>
@@ -168,18 +168,7 @@ const isReady = ref(false)
 
 // ========== Swiper ==========
 const currentIndex = ref(0)
-type SwiperChangeDetail = {
-	current: number
-	source?: string
-}
 
-type SwiperChangeEvent = {
-	detail: SwiperChangeDetail
-}
-
-const onSwiperChange = (e: SwiperChangeEvent) => {
-	currentIndex.value = e.detail.current
-}
 
 // ========== Drawer ==========
 const showDrawer = ref(false)
@@ -229,13 +218,7 @@ onUnload(() => {
 
 // ========== Event Handlers ==========
 const handleMenu = () => {
-	if (currentIndex.value === 1) {
-		// On tasks view → return to home
-		currentIndex.value = 0
-	} else {
-		// On home view → open drawer
-		showDrawer.value = true
-	}
+	showDrawer.value = true
 }
 
 const handleVoice = () => {
