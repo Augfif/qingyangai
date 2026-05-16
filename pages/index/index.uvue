@@ -24,7 +24,7 @@
 		<swiper class="main-swiper" :current="currentIndex" :duration="350" @change="onSwiperChange">
 			
 			<swiper-item>
-				<scroll-view class="home-scroll" :scroll-y="true">
+				<scroll-view class="home-scroll" :scroll-y="true" :scroll-into-view="scrollTarget">
 					<view class="dialogue-section entrance-item entrance-item--2" :class="{ 'entrance-item--show': isReady }">
 						<view class="ai-greeting">
 							<view class="ai-avatar">
@@ -64,7 +64,7 @@
 							class="chat-bubble"
 							:class="'chat-bubble--' + msg.role"
 						>
-							<text class="chat-bubble__label">{{ msg.role === 'user' ? '你' : 'AI' }}</text>
+							<text class="chat-bubble__label">{{ msg.role === "user" ? "你" : "AI" }}</text>
 							<text class="chat-bubble__text">{{ msg.content }}</text>
 						</view>
 						<!-- 正在流式输出的 AI 回复 -->
@@ -81,7 +81,8 @@
 							<image class="import-btn__icon" src="/static/icons/paper-plane.png" mode="aspectFit" />
 							<text class="import-btn__text">导入三餐计划</text>
 						</view>
-					</view>
+					<view id="chat-bottom" style="height: 1px;" />
+				</view>
 					<view style="height: 40px;" />
 
 					<view class="camera-section entrance-item entrance-item--3" :class="{ 'entrance-item--show': isReady }">
@@ -220,6 +221,17 @@ let breathTimer: number | null = null
 const ripplePhase = ref(false)
 let rippleTimer: number | null = null
 
+/** scroll-into-view 目标，用于自动滚动到聊天底部 */
+const scrollTarget = ref("")
+
+/** 滚动到聊天底部：先清空再设置以强制触发 */
+const scrollToBottom = () => {
+	scrollTarget.value = ""
+	setTimeout(() => {
+		scrollTarget.value = "chat-bottom"
+	}, 50)
+}
+
 // ========== Task Data (Mock) ==========
 const mealPlan = ref<MealPlan>({
 	date: '2026年5月14日',
@@ -259,7 +271,7 @@ const mealPlan = ref<MealPlan>({
 })
 
 // ========== AI 聊天状态 ==========
-type ChatBubble = { role: 'user' | 'ai'; content: string }
+type ChatBubble = { role: "user" | "ai"; content: string }
 /** 历史聊天记录（已完成的对话） */
 const chatMessages = ref<ChatBubble[]>([])
 /** 当前正在流式输出的文字 */
@@ -325,17 +337,34 @@ const handleGenerate = async () => {
 	userInput.value = ''
 
 	// 将用户消息加入对话气泡
-	chatMessages.value.push({ role: 'user', content: msg } as ChatBubble)
+	chatMessages.value.push({ role: "user", content: msg } as ChatBubble)
+	// 滚动到底部
+	scrollToBottom()
 	isChatting.value = true
 
+	// 构建完整对话历史（映射 ai → assistant，大模型 API 只认 assistant）
+	// 构建完整对话历史（映射 ai → assistant，大模型 API 只认 assistant）
+	const historyMessages: UTSJSONObject[] = []
+	const msgs = chatMessages.value
+	for (let idx = 0; idx < msgs.length; idx++) {
+		const item = msgs[idx]
+		const apiRole = item.role === "ai" ? "assistant" : item.role
+		historyMessages.push({
+			"role": apiRole,
+			"content": item.content
+		} as UTSJSONObject)
+	}
+
 	try {
-		const reply = await chatStream(msg, (text: string) => {
+		const reply = await chatStream(historyMessages, (text: string) => {
 			aiResponse.value = text
 		})
 		// AI 回复完成，移入历史记录
-		chatMessages.value.push({ role: 'ai', content: reply } as ChatBubble)
+		chatMessages.value.push({ role: "ai", content: reply } as ChatBubble)
 		aiResponse.value = ''
 		showPlanBtn.value = true
+		// 滚动到底部
+		scrollToBottom()
 	} catch (e) {
 		uni.showToast({ title: '对话失败，请重试', icon: 'none' })
 	} finally {
@@ -416,10 +445,13 @@ const handleCamera = async () => {
 			sizeType: ['compressed'],
 			sourceType: ['camera', 'album']
 		})
-		const resObj = chooseRes as UTSJSONObject
+		// JSON 桥接：避免 Android Java ChooseImageSuccess 到 UTSJSONObject 的 ClassCastException
+		const json = JSON.stringify(chooseRes)
+		const resObj = JSON.parse(json) as UTSJSONObject
 		const tempPaths = resObj["tempFilePaths"] as string[]
+		if (tempPaths == null || tempPaths.length === 0) return
 		const tempPath = tempPaths[0]
-		if (tempPath === "" || tempPath == null) return
+		if (tempPath === "") return
 
 		uni.showLoading({ title: '识别中...', mask: true })
 		const visionRes = await recognizeFood(tempPath)
@@ -433,7 +465,7 @@ const handleCamera = async () => {
 		})
 	} catch (err) {
 		uni.hideLoading()
-		uni.showToast({ title: '识别失败，请重试', icon: 'none' })
+		uni.showToast({ title: '拍照识食失败，请重试', icon: 'none' })
 	}
 }
 

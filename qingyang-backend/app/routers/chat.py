@@ -44,10 +44,15 @@ async def chat(
     - `stream: false` (default) → returns `{ "reply": "..." }`
     - `stream: true` → returns SSE stream `data: {"reply": "chunk"}\n\n`
     """
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": req.message},
-    ]
+    if req.messages and len(req.messages) > 0:
+        # 有历史记录时，直接将 system prompt 和前端传来的完整 messages 拼接
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + req.messages
+    else:
+        # 兼容旧单条消息逻辑
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": req.message},
+        ]
 
     if req.stream:
         return StreamingResponse(

@@ -135,22 +135,23 @@ function recognizeFood(filePath: string): Promise<VisionResponse> {
  * 3. AI 聊天
  * 发送消息到 AI 聊天接口，返回完整回复文本
  *
- * @param message 用户输入的文本，每项为 {"role": "user"|"assistant", "content": "..."}
+ * @param messages 对话消息数组，每项为 {"role": "user"|"assistant", "content": "..."}
  * @param onChunk 兼容回调，一次性返回完整文本
  * @returns 返回完整响应文本的 Promise
  */
 function chatStream(
-	message: string,
+	messages: UTSJSONObject[],
 	onChunk: (fullText: string) => void
 ): Promise<string> {
 	return new Promise((resolve, reject) => {
+		// 用 UTSJSONObject 括号赋值，避免 data 字面量含数组时 uni.request 序列化失败
+		const reqData = {} as UTSJSONObject
+		reqData["messages"] = messages
+		reqData["stream"] = false
 		uni.request({
 			url: BASE_URL + '/api/chat',
 			method: 'POST',
-			data: {
-				message: message,
-				stream: false
-			},
+			data: reqData,
 			header: { 'content-type': 'application/json' },
 			success: (res) => {
 				if (res.statusCode >= 200 && res.statusCode < 300) {
