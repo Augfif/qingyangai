@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     SECRET_KEY: str="your-secret-key-here-change-in-production"
     ALGORITHM: str="HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int= 30
+
+    # Speech ASR (Vivo)
+    SPEECH_ASR_APP_ID: str = "YOUR_APP_ID_HERE"
+    SPEECH_ASR_APP_KEY: str = "YOUR_APP_KEY_HERE"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -15,7 +15,8 @@ COPY . .
 
 EXPOSE 8000
 
+# workers=1：session_memory 在进程内存，多 worker 不共享。生产切 Redis 后可调大
 CMD ["gunicorn", "app.main:app", \
      "--worker-class", "uvicorn.workers.UvicornWorker", \
-     "--workers", "4", \
+     "--workers", "1", \
      "--bind", "0.0.0.0:8000"]

@@ -7,7 +7,10 @@ class ChatRequest(BaseModel):
     message: str = ""
     stream: bool = False
     messages: Optional[List[Dict[str, str]]] = None
+    session_id: Optional[str] = None
+    history: Optional[List[Dict[str, str]]] = None
 
 
 class ChatResponse(BaseModel):
     reply: str
+    session_id: str = ""

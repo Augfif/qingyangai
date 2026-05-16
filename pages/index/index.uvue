@@ -186,7 +186,7 @@ import { ref } from 'vue'
 import { onReady, onUnload } from '@dcloudio/uni-app'
 import { generateMealPlan } from '@/api/meal'
 import type { MealPlanResponse, BackendMealItem } from '@/api/meal'
-import { recognizeFood, chatStream } from '@/utils/api'
+import { recognizeFood, chatStream, startSpeechRecognition, stopSpeechRecognition } from '@/utils/api'
 
 // ========== Status Bar ==========
 const sysInfo = uni.getSystemInfoSync()
@@ -287,6 +287,17 @@ let lastQuestion = ''
 /** 暂存后端返回的原始三餐计划，等待用户确认导入 */
 let pendingMealPlan: MealPlanResponse | null = null
 
+/** 会话 ID，持久化在本地存储用于后端记忆 */
+const getOrCreateSessionId = (): string => {
+	let sid = uni.getStorageSync("chat_session_id") as string
+	if (sid === "" || sid == null) {
+		sid = "sess_" + new Date().getTime().toString()
+		uni.setStorageSync("chat_session_id", sid)
+	}
+	return sid
+}
+const sessionId = ref(getOrCreateSessionId())
+
 // ========== Lifecycle ==========
 onReady(() => {
 	setTimeout(() => { isReady.value = true }, 50)
@@ -326,54 +337,45 @@ const goProfile = () => {
 	uni.navigateTo({ url: "/pages/profile/profile" })
 }
 
-const handleVoice = () => { /* TODO */ }
+const isRecording = ref(false)
+
 const handleGenerate = async () => {
 	if (userInput.value === "" || isChatting.value) {
-		if (!isChatting.value) uni.showToast({ title: '请输入你想说的话', icon: 'none' })
+		if (!isChatting.value) uni.showToast({ title: "请输入你想说的话", icon: "none" })
 		return
 	}
 
 	const msg = userInput.value
-	userInput.value = ''
+	userInput.value = ""
 
 	// 将用户消息加入对话气泡
 	chatMessages.value.push({ role: "user", content: msg } as ChatBubble)
-	// 滚动到底部
 	scrollToBottom()
 	isChatting.value = true
 
-	// 构建完整对话历史（映射 ai → assistant，大模型 API 只认 assistant）
-	// 构建完整对话历史（映射 ai → assistant，大模型 API 只认 assistant）
-	const historyMessages: UTSJSONObject[] = []
-	const msgs = chatMessages.value
-	for (let idx = 0; idx < msgs.length; idx++) {
-		const item = msgs[idx]
-		const apiRole = item.role === "ai" ? "assistant" : item.role
-		
-		// 这里必须这样按属性赋值，绝不能直接放字面量，否则又会变成空对象 {}
-		const msgObj = {} as UTSJSONObject
-		msgObj["role"] = apiRole
-		msgObj["content"] = item.content
-		historyMessages.push(msgObj)
+	// 构建 UI 历史快照（排除最后一条用户消息，避免与 message 字段重复）
+	const uiHistory = [] as UTSJSONObject[]
+	for (let idx = 0; idx < chatMessages.value.length - 1; idx++) {
+		const item = chatMessages.value[idx]
+		const cleanItem = {} as UTSJSONObject
+		cleanItem["role"] = item.role === "ai" ? "assistant" : item.role
+		cleanItem["content"] = item.content
+		uiHistory.push(cleanItem)
 	}
 
 	try {
-		const reply = await chatStream(historyMessages, (text: string) => {
+		const reply = await chatStream(sessionId.value, msg, uiHistory, (text: string) => {
 			aiResponse.value = text
 		})
-		// AI 回复完成，移入历史记录
 		chatMessages.value.push({ role: "ai", content: reply } as ChatBubble)
-		aiResponse.value = ''
+		aiResponse.value = ""
 		showPlanBtn.value = true
-		// 滚动到底部
 		scrollToBottom()
 	} catch (e) {
-		// 修改这里：把隐藏的真实报错打印并使用弹窗强制显示出来
 		const errorDetail = JSON.stringify(e)
 		console.error("详细报错:", errorDetail)
-		
 		uni.showModal({
-			title: '底层错误信息',
+			title: "底层错误信息",
 			content: errorDetail,
 			showCancel: false
 		})
@@ -383,6 +385,32 @@ const handleGenerate = async () => {
 }
 
 /** 生成计划表 — 将全部聊天记录发给 AI 输出三餐计划 */
+const handleVoice = async () => {
+	if (isRecording.value) {
+		// 正在录音 → 停止
+		isRecording.value = false
+		stopSpeechRecognition()
+		uni.hideLoading()
+		return
+	}
+
+	try {
+		isRecording.value = true
+		uni.showLoading({ title: "识别中...", mask: true })
+		const text = await startSpeechRecognition()
+		uni.hideLoading()
+		isRecording.value = false
+		if (text !== "") {
+			userInput.value = text
+			await handleGenerate()
+		}
+	} catch (e) {
+		uni.hideLoading()
+		isRecording.value = false
+		uni.showToast({ title: "语音识别失败，请重试", icon: "none" })
+	}
+}
+
 const handleGeneratePlan = async () => {
 	if (chatMessages.value.length === 0) return
 

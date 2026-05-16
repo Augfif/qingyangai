@@ -143,34 +143,32 @@ type AIChatRequest = {
 	messages: AIChatMessage[]
 }
 
- /* 3. AI 聊天
- * 完全契合“前端维护历史”架构，原生字典传输
+/**
+ * 3. AI 聊天（会话记忆版）
+ * 后端通过 session_id 维护对话历史，前端传当前消息 + UI 历史快照
+ *
+ * @param sessionId   会话标识，持久化在 storage 中
+ * @param userMessage 用户当前输入的消息
+ * @param historyMessages 前端 UI 历史快照（不含当前消息），用于后端首次初始化
+ * @param onChunk     兼容回调，一次性返回完整文本
  */
 function chatStream(
-	messages: UTSJSONObject[],
+	sessionId: string,
+	userMessage: string,
+	historyMessages: UTSJSONObject[],
 	onChunk: (fullText: string) => void
 ): Promise<string> {
 	return new Promise((resolve, reject) => {
-		
-		// 1. 提取最新的一句话作为 fallback 保底
-		let lastMsg = ""
-		if (messages.length > 0) {
-			lastMsg = messages[messages.length - 1]["content"] as string
-		}
-
-		// 2. 放弃所有复杂的类型强转和 JSON.stringify。
-		// 直接使用 UTS 最原生的 UTSJSONObject，这是底层原生网络请求唯一 100% 信任的数据结构！
 		const reqData = {} as UTSJSONObject
-		reqData["message"] = lastMsg
+		reqData["session_id"] = sessionId
+		reqData["message"] = userMessage
 		reqData["stream"] = false
-		// 这里直接放入你在 index.uvue 里清洗好的历史消息数组
-		reqData["messages"] = messages 
+		reqData["history"] = historyMessages
 
-		// 3. 发起纯净的请求
 		uni.request({
 			url: BASE_URL + '/api/chat',
 			method: 'POST',
-			data: reqData, 
+			data: reqData,
 			header: { 'content-type': 'application/json' },
 			success: (res) => {
 				if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -188,9 +186,71 @@ function chatStream(
 		})
 	})
 }
+// ==================== 语音识别（WebSocket） ====================
+
+let speechSocketTask: SocketTask | null = null
+let speechRecorder: RecorderManager | null = null
+
+/**
+ * 开始语音识别
+ * 连接后端 WebSocket → 启动录音 → 流式发送 PCM 帧 → 返回识别文本
+ */
+function startSpeechRecognition(): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const wsUrl = BASE_URL.replace("http://", "ws://").replace("https://", "wss://") + "/ws/speech"
+		const socketTask = uni.connectSocket({ url: wsUrl })
+		const recorder = uni.getRecorderManager()
+
+		socketTask.onOpen((res: OnSocketOpenCallbackResult) => {
+			recorder.start({ sampleRate: 16000, numberOfChannels: 1, format: "pcm", frameSize: 10 } as RecorderManagerStartOptions)
+		})
+
+		recorder.onFrameRecorded((res: any) => {
+			const buf = (res as UTSJSONObject)["frameBuffer"] as ArrayBuffer
+			if (buf != null) {
+				socketTask.send({ data: buf } as SendSocketMessageOptions)
+			}
+		})
+
+		socketTask.onMessage((msgRes: OnSocketMessageCallbackResult) => {
+			const data = JSON.parse((msgRes as UTSJSONObject)["data"] as string) as UTSJSONObject
+			if (data["success"] === true) {
+				resolve(data["text"] as string)
+			} else {
+				reject({ message: data["error"] as string })
+			}
+		})
+
+		socketTask.onError((err: GeneralCallbackResult) => {
+			reject({ message: "WebSocket 连接失败", detail: err })
+		})
+
+		recorder.onError((err: IRecorderManagerFail) => {
+			reject({ message: "录音失败", detail: err })
+		})
+
+		speechSocketTask = socketTask
+		speechRecorder = recorder
+	})
+}
+
+/**
+ * 停止语音识别：停止录音并发送结束标记
+ */
+function stopSpeechRecognition(): void {
+	const recorder = speechRecorder
+	if (recorder != null) {
+		recorder.stop()
+	}
+	const socket = speechSocketTask
+	if (socket != null) {
+		socket.send({ data: "--stop--" } as SendSocketMessageOptions)
+	}
+}
+
 // ==================== 导出 ====================
 
-export { generateMealPlan, recognizeFood, chatStream }
+export { generateMealPlan, recognizeFood, chatStream, startSpeechRecognition, stopSpeechRecognition }
 export type {
 	GenerateMealPlanRequest,
 	MealPlanResponse,

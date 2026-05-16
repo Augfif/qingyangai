@@ -9,6 +9,7 @@ from app.routers.meal_plan import router as meal_plan_router
 from app.routers.vision import router as vision_router
 # ↓↓↓ 新增：导入 auth 路由 + 数据库建表需要的内容
 from app.routers.auth import router as auth_router
+from app.routers.speech import router as speech_router
 from app.db.base import Base
 from app.db.session import engine
 from app.models.user import User
@@ -47,6 +48,7 @@ app.include_router(auth_router)       # ← 新增：注册登录路由
 app.include_router(chat_router)
 app.include_router(meal_plan_router)
 app.include_router(vision_router)
+app.include_router(speech_router)
 
 # Global error handlers
 register_handlers(app)
