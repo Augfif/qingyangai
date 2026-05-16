@@ -33,10 +33,9 @@ type MealPlanResponse = {
  * @param prompt 用户的饮食目标字符串，如 "我想调理肠胃、不想节食"
  */
 export const generateMealPlan = async (prompt: string): Promise<MealPlanResponse> => {
-	// 声明 body 时务必指定类型，按需放入可选参数
-	const body: UTSJSONObject = {
-		"target": prompt
-	}
+	// 显式创建 UTSJSONObject 并赋值，避免字面量强转丢失字段
+	const body = {} as UTSJSONObject
+	body["target"] = prompt
 
 	// 直接按顺序传参，避开泛型推导报错
 	const obj = await request('/api/tasks/meal-plan', 'POST', body)

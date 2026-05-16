@@ -349,10 +349,12 @@ const handleGenerate = async () => {
 	for (let idx = 0; idx < msgs.length; idx++) {
 		const item = msgs[idx]
 		const apiRole = item.role === "ai" ? "assistant" : item.role
-		historyMessages.push({
-			"role": apiRole,
-			"content": item.content
-		} as UTSJSONObject)
+		
+		// 这里必须这样按属性赋值，绝不能直接放字面量，否则又会变成空对象 {}
+		const msgObj = {} as UTSJSONObject
+		msgObj["role"] = apiRole
+		msgObj["content"] = item.content
+		historyMessages.push(msgObj)
 	}
 
 	try {
@@ -366,7 +368,15 @@ const handleGenerate = async () => {
 		// 滚动到底部
 		scrollToBottom()
 	} catch (e) {
-		uni.showToast({ title: '对话失败，请重试', icon: 'none' })
+		// 修改这里：把隐藏的真实报错打印并使用弹窗强制显示出来
+		const errorDetail = JSON.stringify(e)
+		console.error("详细报错:", errorDetail)
+		
+		uni.showModal({
+			title: '底层错误信息',
+			content: errorDetail,
+			showCancel: false
+		})
 	} finally {
 		isChatting.value = false
 	}
@@ -438,35 +448,55 @@ const importToMealPlan = () => {
 }
 
 /** 拍照识食 — 选择图片并上传后端识别 */
-const handleCamera = async () => {
-	try {
-		const chooseRes = await uni.chooseImage({
-			count: 1,
-			sizeType: ['compressed'],
-			sourceType: ['camera', 'album']
-		})
-		// JSON 桥接：避免 Android Java ChooseImageSuccess 到 UTSJSONObject 的 ClassCastException
-		const json = JSON.stringify(chooseRes)
-		const resObj = JSON.parse(json) as UTSJSONObject
-		const tempPaths = resObj["tempFilePaths"] as string[]
-		if (tempPaths == null || tempPaths.length === 0) return
-		const tempPath = tempPaths[0]
-		if (tempPath === "") return
+const handleCamera = () => {
+  uni.chooseImage({
+    count: 1,
+    sizeType: ['compressed'],
+    sourceType: ['camera', 'album'],
+    success: (res) => { // 移除 async 关键字
+      const tempPaths = res.tempFilePaths
+      if (tempPaths.length === 0) return
+      const tempPath = tempPaths[0]
 
-		uni.showLoading({ title: '识别中...', mask: true })
-		const visionRes = await recognizeFood(tempPath)
-		uni.hideLoading()
-
-		uni.showModal({
-		  title: visionRes.food_name,
-		  content: '预估热量：' + visionRes.estimated_calories + '\n' + '健康评价：' + visionRes.health_evaluation + '\n' + '食用建议：' + visionRes.suggestions,
-		  showCancel: false,
-		  confirmText: '知道了'
-		})
-	} catch (err) {
-		uni.hideLoading()
-		uni.showToast({ title: '拍照识食失败，请重试', icon: 'none' })
-	}
+      uni.showLoading({ title: '识别中...', mask: true })
+      // 使用 .then() 和 .catch() 处理异步
+      recognizeFood(tempPath)
+        .then((visionRes) => {
+          uni.hideLoading()
+          uni.showModal({
+            title: visionRes.food_name,
+            content: '预估热量：' + visionRes.estimated_calories + '\n健康评价：' + visionRes.health_evaluation + '\n食用建议：' + visionRes.suggestions,
+            showCancel: false,
+            confirmText: '知道了'
+          })
+        })
+        .catch((apiErr) => {
+          uni.hideLoading()
+          uni.showModal({
+            title: '识别接口报错',
+            content: JSON.stringify(apiErr),
+            showCancel: false
+          })
+        })
+    },
+		fail: (err) => {
+			// 👇 明确提取 errMsg，不再使用会导致 {} 的 stringify
+			const errorMsg = err.errMsg
+			
+			// 如果是用户主动取消返回，不弹报错
+			if (errorMsg.includes("cancel")) {
+				console.log("用户取消了选择图片")
+				return
+			}
+			
+			// 弹出真实的报错原因（通常是权限拒绝等）
+			uni.showModal({
+				title: '相机/相册调起失败',
+				content: errorMsg,
+				showCancel: false
+			})
+		}
+	})
 }
 
 const toggleItem = (meal: Meal, item: MealItem) => {
