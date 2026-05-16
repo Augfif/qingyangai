@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from PIL import Image
 
 from app.config import settings
-from app.models.vision import VisionResponse
+from app.schemas.vision import VisionResponse
 from app.services.ai_client import AIService, AIServiceError
 from app.services.meal_plan_parser import extract_json, VisionParseError
 from app.dependencies import get_ai_service

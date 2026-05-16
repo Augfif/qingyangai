@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings,SettingsConfigDict
 from typing import List
 
 
@@ -22,7 +22,15 @@ class Settings(BaseSettings):
     # Rate limit (reserved for future use)
     RATE_LIMIT_PER_MINUTE: int = 30
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    DATABASE_URL:str = "sqlite:///./qingyang.db"
+    SECRET_KEY: str="your-secret-key-here-change-in-production"
+    ALGORITHM: str="HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int= 30
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="allow"
+    )
 
 
 settings = Settings()

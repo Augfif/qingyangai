@@ -3,7 +3,7 @@ from datetime import date
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
-from app.models.meal_plan import MealPlanRequest, MealPlanResponse
+from app.schemas.meal_plan import MealPlanRequest, MealPlanResponse
 from app.services.ai_client import AIService, AIServiceError
 from app.services.meal_plan_parser import parse_meal_plan, MealPlanParseError
 from app.dependencies import get_ai_service
@@ -36,7 +36,7 @@ SYSTEM_PROMPT = (
 
 
 def _build_user_message(req: MealPlanRequest) -> str:
-    parts = [f"目标：{req.goal}"]
+    parts = [f"目标：{req.target}"]
     if req.dietary_restrictions:
         parts.append(f"饮食限制：{req.dietary_restrictions}")
     if req.calorie_target:

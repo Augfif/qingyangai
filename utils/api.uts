@@ -1,0 +1,181 @@
+/**
+ * utils/api.uts
+ * 后端 API 统一封装层 — 所有接口调用集中管理
+ *
+ * BASE_URL 统一在 utils/config.ts 中配置，修改后全局生效。
+ * 部署前请修改 utils/config.ts 中的 YOUR_SERVER_IP 为实际地址。
+ */
+
+import { BASE_URL } from '@/utils/config'
+
+// ==================== 类型定义 ====================
+
+// ----- 三餐计划生成 (POST /api/tasks/meal-plan) -----
+
+/** 生成三餐计划 — 请求参数（对应后端 MealPlanRequest） */
+type GenerateMealPlanRequest = {
+	goal: string
+	dietary_restrictions: string
+	calorie_target: number
+}
+
+/** 后端返回的单餐结构 */
+type BackendMealItem = {
+	items: string[]
+	ingredients?: string
+	calories?: string
+	tips?: string
+}
+
+/** 生成三餐计划 — 响应数据（对应后端 MealPlanResponse） */
+type MealPlanResponse = {
+	date: string
+	target: string
+	breakfast: BackendMealItem
+	lunch: BackendMealItem
+	dinner: BackendMealItem
+}
+
+// ----- 视觉识别 (POST /api/vision/recognize) -----
+
+/** 视觉识别 — 响应数据 */
+type VisionResponse = {
+	food_name: string
+	estimated_calories: string
+	health_evaluation: string
+	suggestions: string
+}
+
+// ----- AI 聊天 (POST /api/chat) -----
+
+/** AI 聊天响应 */
+type ChatResponse = {
+	reply: string
+}
+
+// ==================== API 封装函数 ====================
+
+/**
+ * 1. 生成三餐计划
+ * 将用户的调理目标、饮食限制和热量需求发送给后端，
+ * 返回包含早/午/晚三餐详细安排的 MealPlanResponse
+ */
+function generateMealPlan(data: GenerateMealPlanRequest): Promise<MealPlanResponse> {
+	return new Promise((resolve, reject) => {
+		uni.request({
+			url: BASE_URL + '/api/tasks/meal-plan',
+			method: 'POST',
+			data: {
+				goal: data.goal,
+				dietary_restrictions: data.dietary_restrictions,
+				calorie_target: data.calorie_target
+			},
+			header: { 'content-type': 'application/json' },
+			success: (res) => {
+				if (res.statusCode >= 200 && res.statusCode < 300) {
+					// 用 UTSJSONObject + 括号取值，避免 as Type 的 ClassCastException
+					const obj = res.data as UTSJSONObject
+					const bf = obj["breakfast"] as UTSJSONObject
+					const lu = obj["lunch"] as UTSJSONObject
+					const dn = obj["dinner"] as UTSJSONObject
+					const parsed: MealPlanResponse = {
+						date: obj["date"] as string,
+						target: obj["target"] as string,
+						breakfast: { items: bf["items"] as string[] },
+						lunch:     { items: lu["items"] as string[] },
+						dinner:    { items: dn["items"] as string[] }
+					}
+					resolve(parsed)
+				} else {
+					reject({ message: '请求失败，状态码：' + res.statusCode })
+				}
+			},
+			fail: (err) => {
+				reject({ message: '网络异常，请检查后端服务是否启动', detail: err })
+			}
+		})
+	})
+}
+
+/**
+ * 2. 拍照识食（上传图片）
+ * 使用 uni.uploadFile 以 multipart/form-data 上传图片，
+ * 后端返回识别到的食物名称和卡路里
+ */
+function recognizeFood(filePath: string): Promise<VisionResponse> {
+	return new Promise((resolve, reject) => {
+		uni.uploadFile({
+			url: BASE_URL + '/api/vision/recognize',
+			filePath: filePath,
+			name: 'file',
+			header: {},
+			success: (res) => {
+				if (res.statusCode >= 200 && res.statusCode < 300) {
+					// uploadFile 的 res.data 是 string，先 JSON.parse 得到 UTSJSONObject
+					const obj = JSON.parse(res.data as string) as UTSJSONObject
+					const parsed: VisionResponse = {
+						food_name: obj["food_name"] as string,
+						estimated_calories: obj["estimated_calories"] as string,
+						health_evaluation: obj["health_evaluation"] as string,
+						suggestions: obj["suggestions"] as string
+					}
+					resolve(parsed)
+				} else {
+					reject({ message: '上传识别失败，状态码：' + res.statusCode })
+				}
+			},
+			fail: (err) => {
+				reject({ message: '网络异常，图片上传失败', detail: err })
+			}
+		})
+	})
+}
+
+/**
+ * 3. AI 聊天
+ * 发送消息到 AI 聊天接口，返回完整回复文本
+ *
+ * @param message 用户输入的文本，每项为 {"role": "user"|"assistant", "content": "..."}
+ * @param onChunk 兼容回调，一次性返回完整文本
+ * @returns 返回完整响应文本的 Promise
+ */
+function chatStream(
+	message: string,
+	onChunk: (fullText: string) => void
+): Promise<string> {
+	return new Promise((resolve, reject) => {
+		uni.request({
+			url: BASE_URL + '/api/chat',
+			method: 'POST',
+			data: {
+				message: message,
+				stream: false
+			},
+			header: { 'content-type': 'application/json' },
+			success: (res) => {
+				if (res.statusCode >= 200 && res.statusCode < 300) {
+					// 用 UTSJSONObject + 括号取值，避免 as ChatResponse 的 ClassCastException
+					const obj = res.data as UTSJSONObject
+					const text = obj["reply"] as string
+					onChunk(text)
+					resolve(text)
+				} else {
+					reject({ message: '聊天请求失败，状态码：' + res.statusCode })
+				}
+			},
+			fail: (err) => {
+				reject({ message: '网络异常，聊天请求失败', detail: err })
+			}
+		})
+	})
+}
+
+// ==================== 导出 ====================
+
+export { generateMealPlan, recognizeFood, chatStream }
+export type {
+	GenerateMealPlanRequest,
+	MealPlanResponse,
+	BackendMealItem,
+	VisionResponse
+}

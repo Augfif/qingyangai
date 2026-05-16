@@ -37,6 +37,7 @@
 							<view class="input-card" :class="{ 'input-card--breathing': isBreathing }">
 								<textarea
 									class="input-card__textarea"
+									v-model="userInput"
 									placeholder="例如：我想调理肠胃、不想节食，给我安排一天的计划..."
 									placeholder-style="color:#a0aec0;font-size:18px;line-height:1.5;"
 									:auto-height="true"
@@ -47,7 +48,7 @@
 										<text class="voice-btn__text">语音输入</text>
 									</view>
 									<view class="generate-btn" @tap="handleGenerate">
-										<text class="generate-btn__text">一键生成</text>
+										<text class="generate-btn__text">一键开始</text>
 										<image class="generate-btn__icon" src="/static/icons/paper-plane.png" mode="aspectFit" />
 									</view>
 								</view>
@@ -55,6 +56,32 @@
 						</view>
 					</view>
 
+					<!-- AI 聊天回复区（流式输出展示） -->
+					<view class="chat-section" v-if="chatMessages.length > 0">
+						<view
+							v-for="(msg, idx) in chatMessages"
+							:key="idx"
+							class="chat-bubble"
+							:class="'chat-bubble--' + msg.role"
+						>
+							<text class="chat-bubble__label">{{ msg.role === 'user' ? '你' : 'AI' }}</text>
+							<text class="chat-bubble__text">{{ msg.content }}</text>
+						</view>
+						<!-- 正在流式输出的 AI 回复 -->
+						<view class="chat-bubble chat-bubble--ai" v-if="aiResponse !== ''">
+							<text class="chat-bubble__label">AI</text>
+							<text class="chat-bubble__text">{{ aiResponse }}</text>
+						</view>
+						<!-- AI 回复完成后，可生成三餐计划 -->
+						<view class="plan-btn" v-if="showPlanBtn && !isChatting" @tap="handleGeneratePlan">
+							<text class="plan-btn__text">生成计划表</text>
+						</view>
+						<!-- 回复完成后可一键导入三餐 -->
+						<view class="import-btn" v-if="showImportBtn" @tap="importToMealPlan">
+							<image class="import-btn__icon" src="/static/icons/paper-plane.png" mode="aspectFit" />
+							<text class="import-btn__text">导入三餐计划</text>
+						</view>
+					</view>
 					<view style="height: 40px;" />
 
 					<view class="camera-section entrance-item entrance-item--3" :class="{ 'entrance-item--show': isReady }">
@@ -156,10 +183,17 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onReady, onUnload } from '@dcloudio/uni-app'
+import { generateMealPlan } from '@/api/meal'
+import type { MealPlanResponse, BackendMealItem } from '@/api/meal'
+import { recognizeFood, chatStream } from '@/utils/api'
 
 // ========== Status Bar ==========
 const sysInfo = uni.getSystemInfoSync()
 const headerPadding = (sysInfo.statusBarHeight ?? 25) + 10
+
+// ========== 用户输入 ==========
+/** 绑定 textarea 的输入文本 */
+const userInput = ref("")
 
 // ========== Types for Tasks ==========
 type MealItem = { name: string; done: boolean }
@@ -224,6 +258,23 @@ const mealPlan = ref<MealPlan>({
 	],
 })
 
+// ========== AI 聊天状态 ==========
+type ChatBubble = { role: 'user' | 'ai'; content: string }
+/** 历史聊天记录（已完成的对话） */
+const chatMessages = ref<ChatBubble[]>([])
+/** 当前正在流式输出的文字 */
+const aiResponse = ref('')
+/** AI 回复完成后，显示"导入三餐"按钮 */
+const showImportBtn = ref(false)
+/** AI 正在回复中，防止重复点击 */
+const isChatting = ref(false)
+/** 至少有一次 AI 回复后，显示"生成计划表"按钮 */
+const showPlanBtn = ref(false)
+/** 用户最近一次提问，用于导入三餐 */
+let lastQuestion = ''
+/** 暂存后端返回的原始三餐计划，等待用户确认导入 */
+let pendingMealPlan: MealPlanResponse | null = null
+
 // ========== Lifecycle ==========
 onReady(() => {
 	setTimeout(() => { isReady.value = true }, 50)
@@ -264,8 +315,127 @@ const goProfile = () => {
 }
 
 const handleVoice = () => { /* TODO */ }
-const handleGenerate = () => { /* TODO */ }
-const handleCamera = () => { /* TODO */ }
+const handleGenerate = async () => {
+	if (userInput.value === "" || isChatting.value) {
+		if (!isChatting.value) uni.showToast({ title: '请输入你想说的话', icon: 'none' })
+		return
+	}
+
+	const msg = userInput.value
+	userInput.value = ''
+
+	// 将用户消息加入对话气泡
+	chatMessages.value.push({ role: 'user', content: msg } as ChatBubble)
+	isChatting.value = true
+
+	try {
+		const reply = await chatStream(msg, (text: string) => {
+			aiResponse.value = text
+		})
+		// AI 回复完成，移入历史记录
+		chatMessages.value.push({ role: 'ai', content: reply } as ChatBubble)
+		aiResponse.value = ''
+		showPlanBtn.value = true
+	} catch (e) {
+		uni.showToast({ title: '对话失败，请重试', icon: 'none' })
+	} finally {
+		isChatting.value = false
+	}
+}
+
+/** 生成计划表 — 将全部聊天记录发给 AI 输出三餐计划 */
+const handleGeneratePlan = async () => {
+	if (chatMessages.value.length === 0) return
+
+	uni.showLoading({ title: 'AI 生成计划表中...', mask: true })
+	try {
+		// 将聊天历史编译为一段提示词
+		const historyText = chatMessages.value
+			.map((m: ChatBubble) => (m.role === 'user' ? '用户' : '轻养AI') + '：' + m.content)
+			.join('\n')
+		const prompt = '以下是我和AI助手的对话记录：\n' + historyText + '\n请根据以上对话，为我生成一份今日膳食计划。'
+
+		const res = await generateMealPlan(prompt)
+		pendingMealPlan = res
+		showPlanBtn.value = false
+		showImportBtn.value = true
+		uni.hideLoading()
+		uni.showToast({ title: '膳食计划已生成！', icon: 'success' })
+	} catch (e) {
+		uni.hideLoading()
+		uni.showToast({ title: '生成失败，请重试', icon: 'none' })
+	}
+}
+
+/** 将 API 响应 MealPlanResponse 转为前端视图需要的 MealPlan 格式 */
+const responseToMealPlan = (res: MealPlanResponse): MealPlan => {
+	const mealTitle = (key: string): string => {
+		if (key === 'breakfast') return '早餐'
+		if (key === 'lunch') return '午餐'
+		if (key === 'dinner') return '晚餐'
+		return key
+	}
+	const mapMeal = (key: 'breakfast' | 'lunch' | 'dinner', meal: BackendMealItem): Meal => {
+		return {
+			title: mealTitle(key),
+			time: '',
+			items: meal.items.map((name: string): MealItem => {
+				return { name: name, done: false } as MealItem
+			}) as MealItem[],
+			extra: (meal.tips ?? '') + (meal.calories ?? '')
+		}
+	}
+	return {
+		date: res.date,
+		goal: res.target,
+		meals: [
+			mapMeal('breakfast', res.breakfast),
+			mapMeal('lunch', res.lunch),
+			mapMeal('dinner', res.dinner)
+		]
+	}
+}
+
+/** 将暂存的三餐计划导入任务卡并跳转 */
+const importToMealPlan = () => {
+	const currentPlan = pendingMealPlan
+	if (currentPlan == null) return
+
+	mealPlan.value = responseToMealPlan(currentPlan as MealPlanResponse)
+	showImportBtn.value = false
+	pendingMealPlan = null
+	currentIndex.value = 1
+	uni.showToast({ title: '已导入三餐计划', icon: 'success' })
+}
+
+/** 拍照识食 — 选择图片并上传后端识别 */
+const handleCamera = async () => {
+	try {
+		const chooseRes = await uni.chooseImage({
+			count: 1,
+			sizeType: ['compressed'],
+			sourceType: ['camera', 'album']
+		})
+		const resObj = chooseRes as UTSJSONObject
+		const tempPaths = resObj["tempFilePaths"] as string[]
+		const tempPath = tempPaths[0]
+		if (tempPath === "" || tempPath == null) return
+
+		uni.showLoading({ title: '识别中...', mask: true })
+		const visionRes = await recognizeFood(tempPath)
+		uni.hideLoading()
+
+		uni.showModal({
+		  title: visionRes.food_name,
+		  content: '预估热量：' + visionRes.estimated_calories + '\n' + '健康评价：' + visionRes.health_evaluation + '\n' + '食用建议：' + visionRes.suggestions,
+		  showCancel: false,
+		  confirmText: '知道了'
+		})
+	} catch (err) {
+		uni.hideLoading()
+		uni.showToast({ title: '识别失败，请重试', icon: 'none' })
+	}
+}
 
 const toggleItem = (meal: Meal, item: MealItem) => {
 	item.done = !item.done
@@ -474,4 +644,74 @@ const handleCheckIn = () => { uni.showToast({ title: '打卡成功！', icon: 'n
 .drawer-profile { flex-direction: row; align-items: center; padding: 16px 20px; border-top: 1px solid rgba(110, 185, 150, 0.12); margin-top: 12px; }
 .drawer-profile__icon { width: 22px; height: 22px; margin-right: 12px; }
 .drawer-profile__text { font-size: 16px; font-weight: 600; color: #1e293b; }
+
+/* ===== Chat Section (AI 流式回复) ===== */
+.chat-section {
+	flex-direction: column;
+	width: 100%;
+	padding: 0 4px;
+	box-sizing: border-box;
+}
+.chat-bubble {
+	flex-direction: column;
+	margin-bottom: 14px;
+	max-width: 90%;
+}
+.chat-bubble--user {
+	align-self: flex-end;
+	align-items: flex-end;
+}
+.chat-bubble--ai {
+	align-self: flex-start;
+	align-items: flex-start;
+}
+.chat-bubble__label {
+	font-size: 12px;
+	font-weight: 600;
+	color: #94a3b8;
+	margin-bottom: 4px;
+	margin-left: 4px;
+}
+.chat-bubble__text {
+	font-size: 15px;
+	line-height: 1.6;
+	color: #1e293b;
+	background-color: rgba(255, 255, 255, 0.75);
+	border-radius: 18px;
+	padding: 12px 16px;
+	border: 1px solid rgba(255, 255, 255, 0.5);
+}
+.chat-bubble--user .chat-bubble__text {
+	background-color: rgba(16, 185, 129, 0.12);
+	border-color: rgba(16, 185, 129, 0.2);
+}
+.plan-btn {
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	background: linear-gradient(135deg, #f59e0b, #d97706);
+	border-radius: 16px;
+	padding: 14px 24px;
+	margin-top: 8px;
+	margin-bottom: 8px;
+	box-shadow: 0 4px 16px rgba(245, 158, 11, 0.2);
+}
+.plan-btn__text {
+	font-size: 15px;
+	font-weight: 600;
+	color: #ffffff;
+}
+.import-btn {
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	background: linear-gradient(135deg, #10b981, #0da271);
+	border-radius: 16px;
+	padding: 14px 24px;
+	margin-top: 8px;
+	margin-bottom: 8px;
+	box-shadow: 0 4px 16px rgba(16, 185, 129, 0.2);
+}
+.import-btn__icon { width: 18px; height: 18px; margin-right: 8px; }
+.import-btn__text { font-size: 15px; font-weight: 600; color: #ffffff; }
 </style>

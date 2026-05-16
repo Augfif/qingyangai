@@ -143,7 +143,7 @@ def control_process(wav_path):
 
     # your_AppId, your_AppKey
     AppID = '2026584001'
-    AppKey = 'YOUR_API_KEY_HERE'
+    AppKey = 'YOUR_APP_KEY_HERE'
 
     uri = '/asr/v2'
     domain = 'api-ai.vivo.com.cn'

@@ -1,7 +1,7 @@
 import re
 import json
 
-from app.models.meal_plan import MealPlanResponse
+from app.schemas.meal_plan import MealPlanResponse
 
 
 class MealPlanParseError(Exception):

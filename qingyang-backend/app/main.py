@@ -7,6 +7,12 @@ from app.config import settings
 from app.routers.chat import router as chat_router
 from app.routers.meal_plan import router as meal_plan_router
 from app.routers.vision import router as vision_router
+# ↓↓↓ 新增：导入 auth 路由 + 数据库建表需要的内容
+from app.routers.auth import router as auth_router
+from app.db.base import Base
+from app.db.session import engine
+from app.models.user import User
+
 from app.middleware.error_handler import register_handlers
 
 # Configure logging
@@ -31,7 +37,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ↓↓↓ 新增：启动时自动创建数据库表（用户表等）
+@app.on_event("startup")
+def create_tables():
+    Base.metadata.create_all(bind=engine)
+
 # Routers
+app.include_router(auth_router)       # ← 新增：注册登录路由
 app.include_router(chat_router)
 app.include_router(meal_plan_router)
 app.include_router(vision_router)
