@@ -21,7 +21,11 @@ export const request = (
 			method: method,
 			data: data,
 			success: (res) => {
-				resolve(res.data as UTSJSONObject)
+				if (res.statusCode >= 200 && res.statusCode < 300) {
+					resolve(res.data as UTSJSONObject)
+				} else {
+					reject({ code: res.statusCode, data: res.data })
+				}
 			},
 			fail: (err) => {
 				reject(err)

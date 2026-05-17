@@ -430,7 +430,13 @@ const handleGeneratePlan = async () => {
 		uni.showToast({ title: '膳食计划已生成！', icon: 'success' })
 	} catch (e) {
 		uni.hideLoading()
-		uni.showToast({ title: '生成失败，请重试', icon: 'none' })
+		const errorDetail = JSON.stringify(e)
+		console.error('生成计划表失败:', errorDetail)
+		uni.showModal({
+			title: '生成失败详情',
+			content: errorDetail,
+			showCancel: false
+		})
 	}
 }
 

@@ -74,7 +74,16 @@ class AIService:
             max_tokens=max_tokens,
             extra_query={"request_id": request_id},
         )
-  
+        if response_format:
+            try:
+                kwargs["response_format"] = response_format
+                response = await self.client.chat.completions.create(**kwargs)
+                if getattr(response, "choices", None):
+                    content = response.choices[0].message.content or ""
+                    return content
+            except Exception:
+                pass
+            del kwargs["response_format"]
 
         try:
             response = await self.client.chat.completions.create(**kwargs)
@@ -85,8 +94,10 @@ class AIService:
                 print("\n" + "=" * 50)
                 print(error_msg)
                 print("=" * 50 + "\n")
-                # 直接抛出包含真实原因的异常，前端会显示这个中文信息
-                raise ValueError(error_msg)
+                raise AIServiceError(
+                    message='AI 服务返回异常，请稍后重试',
+                    request_id=request_id,
+                )
 
             # 2. 正常获取内容
             content = response.choices[0].message.content or ""

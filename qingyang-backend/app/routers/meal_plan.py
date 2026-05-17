@@ -37,8 +37,8 @@ SYSTEM_PROMPT = (
 
 def _build_user_message(req: MealPlanRequest) -> str:
     parts = [f"目标：{req.target}"]
-    if req.dietary_restrictions:
-        parts.append(f"饮食限制：{req.dietary_restrictions}")
+    if req.restrictions:
+        parts.append(f"饮食限制：{req.restrictions}")
     if req.calorie_target:
         parts.append(f"每日摄入目标：{req.calorie_target}千卡")
     if req.preferences:
