@@ -22,9 +22,10 @@ class UserCreate(BaseModel):
         return v
 
 
-# 用户登录请求模型
+# 用户登录请求模型（支持邮箱或用户名登录）
 class UserLogin(BaseModel):
-    email: str
+    email: str | None = None
+    username: str | None = None
     password: str
 
 

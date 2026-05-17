@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 from openai import APIError
 
-from app.models.chat import ChatRequest, ChatResponse
+from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.ai_client import AIService, AIServiceError
 from app.dependencies import get_ai_service
 

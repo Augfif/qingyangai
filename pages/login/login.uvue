@@ -11,9 +11,39 @@
 			<text class="form-card__title">{{ isLoginMode ? '欢迎回来' : '创建账号' }}</text>
 			<text class="form-card__subtitle">{{ isLoginMode ? '登录继续你的健康之旅' : '开启你的专属康养计划' }}</text>
 
-			<!-- Username -->
-			<view class="input-group">
-				<text class="input-group__label">账号</text>
+			<!-- Email (login mode) -->
+			<view class="input-group" v-if="isLoginMode">
+				<text class="input-group__label">邮箱/用户名</text>
+				<view class="input-wrapper">
+					<input
+						class="input-field"
+						type="text"
+						:value="username"
+						@input="username = $event.detail.value"
+						placeholder="请输入邮箱或用户名"
+						placeholder-class="placeholder"
+					/>
+				</view>
+			</view>
+
+			<!-- Email (register mode) -->
+			<view class="input-group" v-if="!isLoginMode">
+				<text class="input-group__label">邮箱</text>
+				<view class="input-wrapper">
+					<input
+						class="input-field"
+						type="text"
+						:value="email"
+						@input="email = $event.detail.value"
+						placeholder="请输入邮箱"
+						placeholder-class="placeholder"
+					/>
+				</view>
+			</view>
+
+			<!-- Username (register only) -->
+			<view class="input-group" v-if="!isLoginMode">
+				<text class="input-group__label">用户名</text>
 				<view class="input-wrapper">
 					<input
 						class="input-field"
@@ -58,12 +88,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onReady } from '@dcloudio/uni-app'
-import { mockLogin, mockRegister } from '@/utils/mockApi'
+import { loginUser, registerUser } from '@/utils/api'
 import { login } from '@/stores/user'
 
 const isLoginMode = ref(true)
 const username = ref('')
 const password = ref('')
+const email = ref('')
 const showPwd = ref(false)
 const isReady = ref(false)
 const isLoading = ref(false)
@@ -73,42 +104,55 @@ function toggleMode() {
 }
 
 async function handleSubmit() {
-	if (username.value === '' || password.value === '') {
-		uni.showToast({ title: '请填写完整信息', icon: 'none' })
-		return
+	if (isLoginMode.value) {
+		// 登录模式：邮箱/用户名 + 密码
+		if (username.value === '' || password.value === '') {
+			uni.showToast({ title: '请填写完整信息', icon: 'none' })
+			return
+		}
+	} else {
+		// 注册模式：邮箱 + 用户名 + 密码
+		if (email.value === '' || username.value === '' || password.value === '') {
+			uni.showToast({ title: '请填写完整信息', icon: 'none' })
+			return
+		}
 	}
+
 	isLoading.value = true
+	console.log('[login] 开始' + (isLoginMode.value ? '登录' : '注册') + ', email:', isLoginMode.value ? username.value : email.value)
 
 	try {
-		// 1. 声明为具体的 UTSJSONObject 类型，并且不要赋 null 初始值
 		let result: UTSJSONObject
 
-		// 2. 将 mock 返回的 Promise<any> 强制转换为 UTSJSONObject
 		if (isLoginMode.value) {
-			result = (await mockLogin(username.value, password.value)) as UTSJSONObject
+			result = await loginUser(username.value, password.value)
 		} else {
-			result = (await mockRegister(username.value, password.value)) as UTSJSONObject
+			result = await registerUser(email.value, username.value, password.value)
 		}
 
-		// 3. 安全地提取数据，不再会有任何歧义
-		const resToken = result['token'] as string
-		const resUser = result['user'] as UTSJSONObject
-		const resUsername = resUser['username'] as string
+		console.log('[login] 接口返回成功')
+		const resToken = result['access_token'] as string
 
-		// 这里的 login 现在绝对能正常找到了
+		// 登录和注册响应结构不同：登录有 user 嵌套，注册在顶层
+		let resUsername = ''
+		if (isLoginMode.value) {
+			const resUser = result['user'] as UTSJSONObject
+			resUsername = resUser['username'] as string
+		} else {
+			resUsername = result['username'] as string
+		}
+
 		login(resUsername, resToken)
 
 		uni.showToast({ title: isLoginMode.value ? '登录成功' : '注册成功', icon: 'success' })
 		setTimeout(function () {
 			uni.reLaunch({ url: '/pages/index/index' })
 		}, 1000)
-		
+
 	} catch (e: any) {
 		let errorMsg = '操作失败'
-		// 同样将 error 对象转换为 UTSJSONObject 来安全读取
-		const errObj = e as UTSJSONObject
-		if (errObj != null && errObj['message'] != null) {
-			errorMsg = errObj['message'] as string
+		if (e != null && e.message != null) {
+			errorMsg = e.message as string
 		}
 		uni.showToast({ title: errorMsg, icon: 'none' })
 	} finally {

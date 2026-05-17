@@ -1,8 +1,3 @@
-from app.db.base import Base
-from app.db.session import engine
-
-# 关键：导入User模型，让SQLAlchemy识别并创建表
+# 导入 User ORM 模型，确保它在 Base.metadata 中注册
+# 建表由 main.py 的 startup 事件统一管理
 from app.models.user import User
-
-# 自动创建所有表（表不存在时才创建）
-Base.metadata.create_all(bind=engine)

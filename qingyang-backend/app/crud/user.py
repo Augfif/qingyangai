@@ -22,8 +22,13 @@ def create_user(db: Session, user: UserCreate) -> User:
     db.refresh(db_user)
     return db_user
 
-def authenticate_user(db: Session, email: str, password: str) -> User | None:
-    user = get_user_by_email(db, email)
+def authenticate_user(db: Session, email: str | None = None, username: str | None = None, password: str = "") -> User | None:
+    # 优先用邮箱查，再用用户名查
+    user = None
+    if email:
+        user = get_user_by_email(db, email)
+    if not user and username:
+        user = get_user_by_username(db, username)
     if not user:
         return None
     if not verify_password(password, user.hashed_password):

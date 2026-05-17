@@ -9,7 +9,7 @@ from app.config import settings
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(user: UserCreate, db: Session = Depends(get_db)):
     # 检查邮箱是否已存在
     if get_user_by_email(db, user.email):
@@ -33,13 +33,21 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     }
     return {**db_user_dict, "access_token": access_token, "token_type": "bearer"}
 
-@router.post("/login", response_model=Token)
+@router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = authenticate_user(db, user.email, user.password)
+    db_user = authenticate_user(db, email=user.email, username=user.username, password=user.password)
     if not db_user:
         raise HTTPException(status_code=401, detail="邮箱或密码错误")
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": db_user.email}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": db_user.id,
+            "email": db_user.email,
+            "username": db_user.username
+        }
+    }

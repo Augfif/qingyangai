@@ -4,7 +4,7 @@ from typing import List
 
 class Settings(BaseSettings):
     # AI API
-    AI_API_KEY: str
+    AI_API_KEY: str = "YOUR_API_KEY_HERE"
     AI_BASE_URL: str = "https://api-ai.vivo.com.cn/v1"
     AI_MODEL: str = "Doubao-Seed-2.0-pro"
 
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int= 30
 
     # Speech ASR (Vivo)
-    SPEECH_ASR_APP_ID: str = "YOUR_APP_ID_HERE"
+    SPEECH_ASR_APP_ID: str = "2026584001"
     SPEECH_ASR_APP_KEY: str = "YOUR_APP_KEY_HERE"
 
     model_config = SettingsConfigDict(

@@ -248,9 +248,87 @@ function stopSpeechRecognition(): void {
 	}
 }
 
+// ==================== 用户认证 ====================
+
+/** 登录请求数据结构 */
+type LoginRequestBody = {
+	email: string
+	username: string
+	password: string
+}
+
+/** 注册请求数据结构 */
+type RegisterRequestBody = {
+	email: string
+	username: string
+	password: string
+}
+
+/**
+ * 4. 用户注册
+ * POST /api/auth/register
+ * 后端创建用户并返回 token + 用户信息
+ */
+function registerUser(email: string, username: string, password: string): Promise<UTSJSONObject> {
+	return new Promise((resolve, reject) => {
+		try {
+			const raw: RegisterRequestBody = { email: email, username: username, password: password }
+			const jsonStr = JSON.stringify(raw)
+			const reqData = JSON.parse(jsonStr) as UTSJSONObject
+			uni.request({
+				url: BASE_URL + '/api/auth/register',
+				method: 'POST',
+				data: reqData,
+				header: { 'content-type': 'application/json' },
+				success: (res) => {
+					if (res.statusCode >= 200 && res.statusCode < 300) {
+						resolve(res.data as UTSJSONObject)
+					} else {
+						reject({ message: '注册失败，状态码：' + res.statusCode })
+					}
+				},
+				fail: () => reject({ message: '网络异常，注册请求失败' })
+			})
+		} catch (err) {
+			reject({ message: '请求发送失败，请检查网络' })
+		}
+	})
+}
+
+/**
+ * 5. 用户登录
+ * POST /api/auth/login
+ * 支持邮箱或用户名登录，返回 token + 用户信息
+ */
+function loginUser(emailOrUsername: string, password: string): Promise<UTSJSONObject> {
+	return new Promise((resolve, reject) => {
+		try {
+			const raw: LoginRequestBody = { email: emailOrUsername, username: emailOrUsername, password: password }
+			const jsonStr = JSON.stringify(raw)
+			const reqData = JSON.parse(jsonStr) as UTSJSONObject
+			uni.request({
+				url: BASE_URL + '/api/auth/login',
+				method: 'POST',
+				data: reqData,
+				header: { 'content-type': 'application/json' },
+				success: (res) => {
+					if (res.statusCode >= 200 && res.statusCode < 300) {
+						resolve(res.data as UTSJSONObject)
+					} else {
+						reject({ message: '登录失败，状态码：' + res.statusCode })
+					}
+				},
+				fail: () => reject({ message: '网络异常，登录请求失败' })
+			})
+		} catch (err) {
+			reject({ message: '请求发送失败，请检查网络' })
+		}
+	})
+}
+
 // ==================== 导出 ====================
 
-export { generateMealPlan, recognizeFood, chatStream, startSpeechRecognition, stopSpeechRecognition }
+export { generateMealPlan, recognizeFood, chatStream, startSpeechRecognition, stopSpeechRecognition, registerUser, loginUser }
 export type {
 	GenerateMealPlanRequest,
 	MealPlanResponse,

@@ -25,23 +25,28 @@ function mockRegister(username: string, password: string): Promise<any> {
 				}
 			}
 			if (exists) {
-				reject({ message: '用户名已存在' })
+				console.log('[mock] 注册失败: 用户名已存在', username)
+				const err = {} as UTSJSONObject
+				err['message'] = '用户名已存在'
+				reject(err)
 				return
 			}
 			const newId = users.length + 1
-			const now = new Date().toISOString()
-			const newUser: UTSJSONObject = {
-				id: newId,
-				username: username,
-				password: password,
-				createdAt: now
-			}
+			const newUser = {} as UTSJSONObject
+			newUser['id'] = newId
+			newUser['username'] = username
+			newUser['password'] = password
+			newUser['createdAt'] = new Date().toISOString()
 			users.push(newUser)
 			saveUsers(users)
-			resolve({
-				token: 'mock-token-' + Date.now(),
-				user: { id: newId, username: username }
-			})
+			console.log('[mock] 注册成功:', username)
+			const user = {} as UTSJSONObject
+			user['id'] = newId
+			user['username'] = username
+			const result = {} as UTSJSONObject
+			result['token'] = 'mock-token-' + Date.now()
+			result['user'] = user
+			resolve(result)
 		}, 500)
 	})
 }
@@ -50,6 +55,7 @@ function mockLogin(username: string, password: string): Promise<any> {
 	return new Promise((resolve, reject) => {
 		setTimeout((): void => {
 			const users = getStoredUsers()
+			console.log('[mock] 登录尝试, 当前用户数:', users.length)
 			let matched: UTSJSONObject | null = null
 			for (let i = 0; i < users.length; i++) {
 				const u = users[i] as UTSJSONObject
@@ -59,12 +65,19 @@ function mockLogin(username: string, password: string): Promise<any> {
 				}
 			}
 			if (matched !== null) {
-				resolve({
-					token: 'mock-token-' + Date.now(),
-					user: { id: matched['id'] as number, username: matched['username'] as string }
-				})
+				console.log('[mock] 登录成功:', username)
+				const user = {} as UTSJSONObject
+				user['id'] = matched['id'] as number
+				user['username'] = matched['username'] as string
+				const result = {} as UTSJSONObject
+				result['token'] = 'mock-token-' + Date.now()
+				result['user'] = user
+				resolve(result)
 			} else {
-				reject({ message: '用户名或密码错误' })
+				console.log('[mock] 登录失败: 用户名或密码错误')
+				const err = {} as UTSJSONObject
+				err['message'] = '用户名或密码错误'
+				reject(err)
 			}
 		}, 500)
 	})
